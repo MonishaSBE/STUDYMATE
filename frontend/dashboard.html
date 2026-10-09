@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StudyMate — Dashboard</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="pin"></span> StudyMate</div>
+  <div class="user-chip" id="userChip" onclick="logout()">…</div>
+</div>
+
+<div class="shell">
+  <div class="tabs">
+    <button class="tab active" data-tab="profile">Profile</button>
+    <button class="tab" data-tab="find">Find Partner</button>
+    <button class="tab" data-tab="requests">Chat Requests</button>
+    <button class="tab" data-tab="groups">Study Groups</button>
+    <button class="tab" data-tab="notes">Shared Notes</button>
+    <button class="tab" data-tab="goals">Daily Goals</button>
+  </div>
+
+  <!-- PROFILE -->
+  <section class="panel active" id="panel-profile">
+    <span class="eyebrow">// step 1</span>
+    <h2>Your profile</h2>
+    <div class="card">
+      <form id="profileForm">
+        <div class="grid-2">
+          <div>
+            <label>Department</label>
+            <input type="text" id="p_department" placeholder="e.g. Computer Science" required />
+          </div>
+          <div>
+            <label>Year</label>
+            <select id="p_year" required>
+              <option value="">Select year</option>
+              <option>1st Year</option><option>2nd Year</option>
+              <option>3rd Year</option><option>4th Year</option>
+            </select>
+          </div>
+        </div>
+        <label>Subjects (comma separated)</label>
+        <input type="text" id="p_subjects" placeholder="Data Structures, Algorithms, DBMS" />
+        <label>Available study time</label>
+        <input type="text" id="p_time" placeholder="e.g. 6–8 PM Weekdays" />
+        <label>Short bio</label>
+        <textarea id="p_bio" placeholder="What are you studying towards? What kind of study partner works for you?"></textarea>
+        <div style="margin-top:18px;">
+          <button type="submit" class="btn">Save profile</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- FIND PARTNER -->
+  <section class="panel" id="panel-find">
+    <span class="eyebrow">// matching</span>
+    <h2>Students who match you</h2>
+    <p style="color:var(--ink-soft); margin-top:-6px;">Matched by department, year and overlapping subjects.</p>
+    <div id="matchList" class="card-grid"></div>
+  </section>
+
+  <!-- CHAT REQUESTS -->
+  <section class="panel" id="panel-requests">
+    <span class="eyebrow">// connections</span>
+    <h2>Chat requests</h2>
+    <div class="grid-2">
+      <div>
+        <h3 style="font-size:15px;">Incoming</h3>
+        <div id="incomingList"></div>
+      </div>
+      <div>
+        <h3 style="font-size:15px;">Sent by you</h3>
+        <div id="outgoingList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GROUPS -->
+  <section class="panel" id="panel-groups">
+    <span class="eyebrow">// collaborate</span>
+    <h2>Study groups</h2>
+    <div class="card" style="margin-bottom:20px;">
+      <form id="groupForm">
+        <label>Group name</label>
+        <input type="text" id="g_name" required placeholder="e.g. DBMS Finals Squad" />
+        <label>Subject</label>
+        <input type="text" id="g_subject" placeholder="e.g. DBMS" />
+        <label>Description</label>
+        <textarea id="g_desc" placeholder="What will this group focus on?"></textarea>
+        <label>Max members</label>
+        <input type="number" id="g_max" value="6" min="2" max="30" />
+        <div style="margin-top:18px;"><button type="submit" class="btn">Create group</button></div>
+      </form>
+    </div>
+    <div id="groupList" class="card-grid"></div>
+  </section>
+
+  <!-- NOTES -->
+  <section class="panel" id="panel-notes">
+    <span class="eyebrow">// shared notes</span>
+    <h2>Notes by group</h2>
+    <label>Select group</label>
+    <select id="notesGroupSelect"></select>
+    <div class="card" style="margin:16px 0;">
+      <form id="noteForm">
+        <label>Title</label>
+        <input type="text" id="n_title" required placeholder="e.g. Unit 3 Summary" />
+        <label>File / link URL</label>
+        <input type="url" id="n_url" placeholder="https://drive.google.com/..." />
+        <div style="margin-top:18px;"><button type="submit" class="btn">Share note</button></div>
+      </form>
+    </div>
+    <div id="noteList"></div>
+  </section>
+
+  <!-- GOALS -->
+  <section class="panel" id="panel-goals">
+    <span class="eyebrow">// daily focus</span>
+    <h2>Daily study goals</h2>
+    <div class="card" style="margin-bottom:20px;">
+      <form id="goalForm">
+        <label>Goal</label>
+        <input type="text" id="goal_text" required placeholder="e.g. Finish 20 DSA problems" />
+        <label>Target date</label>
+        <input type="date" id="goal_date" />
+        <div style="margin-top:18px;"><button type="submit" class="btn">Add goal</button></div>
+      </form>
+    </div>
+    <div id="goalList"></div>
+  </section>
+
+  <footer class="hint">StudyMate · built on Zoho Catalyst</footer>
+</div>
+
+<script src="js/config/config.js"></script>
+<script src="js/pages/dashboard.js"></script>
+</body>
+</html>

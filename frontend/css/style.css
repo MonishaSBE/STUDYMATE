@@ -1,0 +1,250 @@
+/* ============================================================
+   StudyMate — visual identity
+   Concept: a campus noticeboard / index-card system.
+   Palette: chalkboard ink + noticeboard cork + highlighter yellow
+   ============================================================ */
+
+:root {
+  --ink: #1c2b3a;           /* chalkboard navy - primary text */
+  --ink-soft: #4a5a6a;      /* secondary text */
+  --paper: #eef1ea;         /* pinboard linen background */
+  --card: #ffffff;          /* index card white */
+  --cork: #c9a876;          /* corkboard tan - dividers/tabs */
+  --highlight: #f2b705;     /* highlighter yellow - primary accent */
+  --highlight-ink: #7a5c00; /* text on highlight */
+  --pin-teal: #2f8f8a;      /* pushpin teal - secondary accent */
+  --pin-red: #c1503f;       /* pushpin red - alerts/urgent */
+  --line: #d8dcd2;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px);
+  background-size: 100% 32px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+a { color: inherit; }
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pin-teal);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.topbar .brand {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topbar .brand .pin {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--highlight);
+  display: inline-block;
+}
+.topbar .user-chip {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: rgba(255,255,255,0.08);
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* ---------- Layout ---------- */
+.shell { max-width: 1080px; margin: 0 auto; padding: 32px; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--cork);
+  margin-bottom: 28px;
+  overflow-x: auto;
+}
+.tab {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 16px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--highlight);
+  font-weight: 600;
+}
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ---------- Index cards ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 20px;
+  position: relative;
+  box-shadow: 0 1px 0 var(--line);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: -6px; left: 20px;
+  width: 24px; height: 12px;
+  background: var(--highlight);
+  clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
+  opacity: 0.85;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* ---------- Forms ---------- */
+label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin: 14px 0 6px;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--paper);
+  color: var(--ink);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--pin-teal);
+}
+textarea { resize: vertical; min-height: 70px; }
+
+button.btn {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 11px 20px;
+  border-radius: 3px;
+  border: none;
+  background: var(--highlight);
+  color: var(--highlight-ink);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+button.btn:hover { transform: translateY(-1px); }
+button.btn.secondary {
+  background: transparent;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+}
+button.btn.small { padding: 6px 12px; font-size: 11px; }
+button.btn.teal { background: var(--pin-teal); color: white; }
+button.btn.danger { background: transparent; color: var(--pin-red); border: 1.5px solid var(--pin-red); }
+
+.pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(47,143,138,0.12);
+  color: var(--pin-teal);
+  margin: 2px 4px 2px 0;
+}
+.pill.pending { background: rgba(242,183,5,0.18); color: var(--highlight-ink); }
+.pill.accepted { background: rgba(47,143,138,0.18); color: var(--pin-teal); }
+.pill.rejected { background: rgba(193,80,63,0.15); color: var(--pin-red); }
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.match-score {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--pin-teal);
+}
+
+footer.hint {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  padding: 40px 0 10px;
+}
+
+/* ---------- Auth screen ---------- */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card {
+  width: 440px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 36px 32px;
+  box-shadow: 0 4px 0 var(--cork);
+}
+.auth-card h1 { font-size: 26px; }
+.auth-card .sub { color: var(--ink-soft); font-size: 14px; margin-bottom: 4px; }
+#signin { margin-top: 20px; min-height: 320px; }
+#signin iframe { width: 100% !important; min-height: 320px !important; border: none; }

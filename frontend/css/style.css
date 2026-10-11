@@ -576,3 +576,266 @@ footer.hint {
   cursor: pointer;
 }
 
+/* ============================================================
+   Smart Find Partner & Suggested Accounts Discovery Design
+   ============================================================ */
+
+/* Discovery Nav Tabs */
+.discovery-nav-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.d-tab {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.d-tab:hover {
+  border-color: var(--cork);
+  color: var(--ink);
+}
+.d-tab.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+  font-weight: 600;
+}
+
+/* Partner Grid Layout */
+.partner-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 20px;
+}
+
+/* Individual Suggested Partner Card */
+.partner-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--pin-teal);
+  border-radius: 6px;
+  background: var(--card);
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+.partner-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(28, 43, 58, 0.08);
+}
+
+.partner-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+/* Profile Initials Avatar (Instagram-style circular badge) */
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--pin-teal) 0%, #1c5e5a 100%);
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(47, 143, 138, 0.25);
+  border: 2px solid #ffffff;
+}
+.profile-avatar.large {
+  width: 68px;
+  height: 68px;
+  font-size: 24px;
+}
+.profile-avatar.palette-0 { background: linear-gradient(135deg, #2f8f8a, #1a5653); }
+.profile-avatar.palette-1 { background: linear-gradient(135deg, #d97736, #9e4b17); }
+.profile-avatar.palette-2 { background: linear-gradient(135deg, #4a6fa5, #294368); }
+.profile-avatar.palette-3 { background: linear-gradient(135deg, #8a5a9c, #593169); }
+
+.partner-info {
+  flex: 1;
+  min-width: 0;
+}
+.partner-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 2px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.partner-name:hover {
+  color: var(--pin-teal);
+  text-decoration: underline;
+}
+.partner-sub {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Compatibility Score Badge */
+.compatibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef8f1;
+  color: #1e8449;
+  border: 1px solid #c2ebd0;
+  margin-bottom: 12px;
+}
+.compatibility-badge.score-mid {
+  background: #fff8e6;
+  color: #996500;
+  border-color: #ffe099;
+}
+
+/* Recommendation Reason Callout */
+.recommendation-callout {
+  background: #f8faf6;
+  border-left: 3px solid var(--highlight);
+  padding: 8px 10px;
+  border-radius: 0 4px 4px 0;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.recommendation-callout strong {
+  display: block;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--highlight-ink);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+/* Meta Details Section */
+.partner-meta-row {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.partner-meta-row strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* Subject Badges */
+.shared-subjects-wrap {
+  margin-bottom: 14px;
+}
+.shared-subjects-wrap .sec-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.subject-pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #eef5f4;
+  color: var(--pin-teal);
+  border: 1px solid #d2e7e4;
+  margin: 2px 3px 2px 0;
+}
+.subject-pill.shared {
+  background: #eaf5eb;
+  color: #1e8449;
+  border-color: #bce3c4;
+  font-weight: 600;
+}
+
+/* Partner Actions Row */
+.partner-card-actions {
+  display: flex;
+  gap: 8px;
+  border-top: 1px dashed var(--line);
+  padding-top: 14px;
+  margin-top: 12px;
+}
+.partner-card-actions .btn {
+  flex: 1;
+  text-align: center;
+  padding: 8px 10px;
+}
+
+/* Connect Button State Styles */
+.btn-connected {
+  background: #eef8f1 !important;
+  color: #1e8449 !important;
+  border: 1px solid #c2ebd0 !important;
+  cursor: default !important;
+}
+.btn-pending {
+  background: #fdf8e6 !important;
+  color: #8c6300 !important;
+  border: 1px solid #f3dc98 !important;
+  cursor: default !important;
+}
+
+/* Skeleton Loading State for Discovery */
+.skeleton-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 20px;
+  min-height: 240px;
+  animation: pulseSkeleton 1.5s infinite ease-in-out;
+}
+@keyframes pulseSkeleton {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.95; }
+  100% { opacity: 0.6; }
+}
+.skeleton-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #e6e8e2;
+  margin-bottom: 12px;
+}
+.skeleton-line {
+  height: 12px;
+  background: #e6e8e2;
+  border-radius: 3px;
+  margin-bottom: 8px;
+}
+
+

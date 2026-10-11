@@ -248,3 +248,331 @@ footer.hint {
 .auth-card .sub { color: var(--ink-soft); font-size: 14px; margin-bottom: 4px; }
 #signin { margin-top: 20px; min-height: 320px; }
 #signin iframe { width: 100% !important; min-height: 320px !important; border: none; }
+
+/* ============================================================
+   StudyMate — Academic Platform Extensions
+   ============================================================ */
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* Stats Grid for Learning Hub */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.stat-card {
+  padding: 16px;
+  text-align: center;
+  border-top: 3px solid var(--pin-teal);
+}
+.stat-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+}
+
+/* Material Library Cards */
+.material-item-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.material-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(28, 43, 58, 0.08);
+}
+.clickable-title {
+  cursor: pointer;
+  color: var(--ink);
+  transition: color 0.15s ease;
+}
+.clickable-title:hover {
+  color: var(--pin-teal);
+  text-decoration: underline;
+}
+.bookmark-btn {
+  background: none;
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.bookmark-btn.active {
+  background: #fff8e1;
+  border-color: var(--highlight);
+  color: var(--highlight-ink);
+  font-weight: 600;
+}
+.material-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+
+/* Status Notifications */
+.status-msg {
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.status-msg.info {
+  background: #eef5f8;
+  color: #1a5276;
+  border: 1px solid #bce2f5;
+}
+.status-msg.success {
+  background: #eef8f1;
+  color: #1e8449;
+  border: 1px solid #c2ebd0;
+}
+.status-msg.error {
+  background: #fdf2f2;
+  color: var(--pin-red);
+  border: 1px solid #f5c6cb;
+}
+
+/* AI Assistant Interface */
+.ai-chat-feed {
+  height: 260px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #fafbf9;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ai-chat-bubble {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 90%;
+}
+.ai-chat-bubble.bot {
+  align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--pin-teal);
+}
+.ai-chat-bubble.user {
+  align-self: flex-end;
+  background: #eaf3f2;
+  border: 1px solid #c8e2df;
+}
+.ai-result-box {
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ai-quote {
+  border-left: 3px solid var(--highlight);
+  padding-left: 10px;
+  margin: 8px 0;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* Interactive 3D Flashcards */
+.flashcard-scene {
+  perspective: 1000px;
+  width: 100%;
+  min-height: 220px;
+  cursor: pointer;
+  margin: 12px 0;
+}
+.flashcard-card {
+  width: 100%;
+  min-height: 220px;
+  position: relative;
+  transition: transform 0.5s;
+  transform-style: preserve-3d;
+}
+.flashcard-card.is-flipped {
+  transform: rotateY(180deg);
+}
+.flashcard-face {
+  position: absolute;
+  width: 100%;
+  min-height: 220px;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  border-radius: 6px;
+  border: 2px solid var(--line);
+  text-align: center;
+  background: var(--card);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+}
+.flashcard-front {
+  border-top: 4px solid var(--pin-teal);
+}
+.flashcard-back {
+  border-top: 4px solid var(--highlight);
+  transform: rotateY(180deg);
+  background: #fffdf8;
+}
+.card-hint {
+  position: absolute;
+  top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.card-text {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* Concept Maps Visual Board */
+.concept-board {
+  padding: 16px;
+  background: #f7f9f4;
+  border: 1px dashed var(--cork);
+  border-radius: 4px;
+  min-height: 260px;
+}
+.concept-nodes-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.concept-node {
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 var(--cork);
+  position: relative;
+  min-width: 130px;
+}
+.concept-node.root { border-color: var(--highlight-ink); background: #fffbe6; }
+.concept-node.core { border-color: var(--pin-teal); }
+.concept-node.detail { border-color: #8c9ba5; }
+.node-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.node-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.node-del-btn {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--pin-red);
+  font-size: 14px;
+  cursor: pointer;
+}
+.edge-chip {
+  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.edge-rel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--pin-teal);
+}
+.edge-del {
+  background: none;
+  border: none;
+  color: var(--pin-red);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Community Q&A Voting */
+.vote-btn {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+.vote-btn.active {
+  background: #eaf3f2;
+  border-color: var(--pin-teal);
+  color: var(--pin-teal);
+  font-weight: 600;
+}
+.pill.accepted {
+  background: #eaf8ee;
+  color: #1e8449;
+  border: 1px solid #b7e4c7;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(28, 43, 58, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-card {
+  width: 100%;
+  max-width: 620px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+

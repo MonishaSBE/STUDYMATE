@@ -22,6 +22,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         await loadOrCreateProfile();
         bindTabs();
         bindForms();
+        initAcademicModules();
         refreshAll();
     } catch (err) {
         console.error(err);
@@ -150,7 +151,20 @@ function bindForms() {
     });
 }
 
+function initAcademicModules() {
+    if (window.CatalogueModule) window.CatalogueModule.init();
+    if (window.MaterialsModule) window.MaterialsModule.init();
+    if (window.UploaderModule) window.UploaderModule.init();
+    if (window.AiAssistantModule) window.AiAssistantModule.init();
+    if (window.QuizzesModule) window.QuizzesModule.init();
+    if (window.FlashcardsModule) window.FlashcardsModule.init();
+    if (window.ConceptMapsModule) window.ConceptMapsModule.init();
+    if (window.CommunityModule) window.CommunityModule.init();
+    if (window.LearningHubModule) window.LearningHubModule.init();
+}
+
 function refreshAll() {
+    if (window.LearningHubModule) window.LearningHubModule.loadMetrics();
     if (!STUDENT_ID) return;
     loadMatches();
     loadRequests();

@@ -31,6 +31,19 @@ app.use('/api/requests', require('./routes/requestRoutes'));
 app.use('/api/notes', require('./routes/notesRoutes'));
 app.use('/api/goals', require('./routes/goalRoutes'));
 
+// Academic Platform Enhancement Routes
+app.use('/api/catalogue', require('./routes/catalogueRoutes'));
+app.use('/api/materials', require('./routes/materialRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/quizzes', require('./routes/quizRoutes'));
+app.use('/api/flashcards', require('./routes/flashcardRoutes'));
+app.use('/api/concept-maps', require('./routes/conceptMapRoutes'));
+app.use('/api/community', require('./routes/communityRoutes'));
+app.use('/api/hub', require('./routes/dashboardHubRoutes'));
+
+// Serve uploaded files securely
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '../frontend')));
 

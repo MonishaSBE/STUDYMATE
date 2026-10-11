@@ -2,9 +2,9 @@ const bcrypt = require('bcryptjs');
 
 const db = {
     users: [
-        { id: 1, email: 'test@test.com', password_hash: bcrypt.hashSync('password', 10) },
-        { id: 2, email: 'student2@test.com', password_hash: bcrypt.hashSync('password', 10) },
-        { id: 3, email: 'student3@test.com', password_hash: bcrypt.hashSync('password', 10) }
+        { id: 1, email: 'test@test.com', password_hash: bcrypt.hashSync('password', 10), role: 'admin' },
+        { id: 2, email: 'student2@test.com', password_hash: bcrypt.hashSync('password', 10), role: 'student' },
+        { id: 3, email: 'student3@test.com', password_hash: bcrypt.hashSync('password', 10), role: 'student' }
     ],
     profiles: [
         { id: 1, user_id: 1, name: 'Alex Johnson', department: 'Computer Science', academic_year: '3rd Year', bio: 'Love coding and AI.', available_time: 'Evenings', subjects: ['Data Structures', 'Machine Learning'] },

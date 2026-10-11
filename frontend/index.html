@@ -36,9 +36,21 @@
         <span class="toggle-auth" onclick="toggleAuth()">Already have an account? Sign in.</span>
       </div>
     </div>
+  <!-- Floating Theme & Zoom Controller -->
+  <div class="floating-zoom-widget">
+    <button class="theme-toggle-btn" onclick="StudyMateTheme.openThemeModal()" title="Customize Theme" style="padding:4px 10px;">
+      <span>🎨</span> <span class="theme-current-name">Theme</span>
+    </button>
+    <div class="zoom-controls" title="Adjust application view scale (or use Ctrl + / Ctrl -)">
+      <button class="zoom-btn" onclick="StudyMateZoom.zoomOut()" title="Zoom Out (Ctrl -)">−</button>
+      <span class="zoom-level-label" onclick="StudyMateZoom.resetZoom()" title="Reset to default 100% scale">100%</span>
+      <button class="zoom-btn" onclick="StudyMateZoom.zoomIn()" title="Zoom In (Ctrl +)">+</button>
+    </div>
   </div>
 
   <script src="js/config/config.js"></script>
+  <script src="js/utils/theme.js"></script>
+  <script src="js/utils/zoom.js"></script>
   <script src="js/auth/auth.js"></script>
 </body>
 </html>

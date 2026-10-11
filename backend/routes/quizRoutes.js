@@ -5,17 +5,33 @@ const { fallbackData } = require('../services/storageAdapter');
 const { extractTextFromDocument } = require('../services/documentExtractor');
 const { generateQuestionsFromContent } = require('../services/aiService');
 
-// 1. Get Quizzes List
+// 1. Get Quizzes List with Domain, Difficulty, and Search Filters
 router.get('/', auth, (req, res) => {
-    const list = fallbackData.quizzes.map(q => ({
+    const { domain, difficulty, search } = req.query;
+    let list = fallbackData.quizzes.map(q => ({
         id: q.id,
         title: q.title,
         subject: q.subject,
+        domain: q.domain || 'Computer Science and Engineering',
         difficulty: q.difficulty,
         num_questions: (q.questions || []).length,
         created_at: q.created_at,
         is_owner: q.user_id === req.session.userId
     }));
+
+    if (search) {
+        const sLower = search.toLowerCase();
+        list = list.filter(q => q.title.toLowerCase().includes(sLower) || q.subject.toLowerCase().includes(sLower));
+    }
+
+    if (domain) {
+        list = list.filter(q => q.domain && q.domain.toLowerCase() === domain.toLowerCase());
+    }
+
+    if (difficulty) {
+        list = list.filter(q => q.difficulty === difficulty);
+    }
+
     res.json({ status: 'success', data: list });
 });
 

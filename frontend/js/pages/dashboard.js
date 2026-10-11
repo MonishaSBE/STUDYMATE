@@ -51,7 +51,13 @@ async function api(path, options = {}) {
         headers: { 'Content-Type': 'application/json' },
         ...options
     });
-    const json = await res.json();
+    const text = await res.text();
+    let json = null;
+    try {
+        json = JSON.parse(text);
+    } catch (e) {
+        throw new Error(res.status === 404 ? 'Endpoint not found. Please refresh or verify server routes.' : `Server error (${res.status})`);
+    }
     if (!res.ok || json.status !== 'success') throw new Error(json.message || 'Request failed');
     return json.data;
 }
@@ -134,12 +140,14 @@ function bindForms() {
     document.getElementById('goalForm').addEventListener('submit', async e => {
         e.preventDefault();
         if (!STUDENT_ID) return alert('Save your profile first.');
+        const reminderVal = document.getElementById('goal_reminder') ? document.getElementById('goal_reminder').value : null;
         await api('/goals', {
             method: 'POST',
             body: JSON.stringify({
                 student_id: STUDENT_ID,
                 goal_text: document.getElementById('goal_text').value,
-                target_date: document.getElementById('goal_date').value
+                target_date: document.getElementById('goal_date') ? document.getElementById('goal_date').value : null,
+                reminder_datetime: reminderVal || null
             })
         });
         e.target.reset();
@@ -155,16 +163,17 @@ function initAcademicModules() {
     if (window.CatalogueModule) window.CatalogueModule.init();
     if (window.MaterialsModule) window.MaterialsModule.init();
     if (window.UploaderModule) window.UploaderModule.init();
-    if (window.AiAssistantModule) window.AiAssistantModule.init();
     if (window.QuizzesModule) window.QuizzesModule.init();
     if (window.FlashcardsModule) window.FlashcardsModule.init();
     if (window.ConceptMapsModule) window.ConceptMapsModule.init();
     if (window.CommunityModule) window.CommunityModule.init();
-    if (window.LearningHubModule) window.LearningHubModule.init();
+    if (window.ChatModule) window.ChatModule.init();
+    initSharedNotesHandlers();
 }
 
 function refreshAll() {
-    if (window.LearningHubModule) window.LearningHubModule.loadMetrics();
+    if (window.ChatModule) window.ChatModule.refreshAll();
+    loadSharedNotes();
     if (!STUDENT_ID) return;
     loadMatches();
     loadRequests();
@@ -436,10 +445,22 @@ function closeStudentProfileModal() {
 
 async function sendChatRequest(receiverId) {
     try {
-        await api('/requests', { method: 'POST', body: JSON.stringify({ sender_id: STUDENT_ID, receiver_id: receiverId }) });
+        const introMessage = prompt(
+            "Write a brief introduction for your study partner request (optional):", 
+            "Hi! Would you like to study together and prepare for the upcoming exams?"
+        );
+        if (introMessage === null) return; // User cancelled
+
+        await api('/chat/requests', { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                receiver_id: receiverId,
+                intro_message: introMessage.trim() || undefined
+            }) 
+        });
         alert('Study partner request sent successfully!');
         loadMatches();
-        loadRequests();
+        if (window.ChatModule) window.ChatModule.refreshAll();
     } catch (err) {
         alert('Could not send request: ' + err.message);
     }
@@ -493,30 +514,115 @@ async function joinGroup(id) {
     }
 }
 
+function initSharedNotesHandlers() {
+    const searchInput = document.getElementById('sharedNotesSearch');
+    const domainFilter = document.getElementById('sharedNotesDomainFilter');
+    const sortSelect = document.getElementById('sharedNotesSort');
+
+    if (searchInput) searchInput.addEventListener('input', () => loadSharedNotes());
+    if (domainFilter) domainFilter.addEventListener('change', () => loadSharedNotes());
+    if (sortSelect) sortSelect.addEventListener('change', () => loadSharedNotes());
+}
+
+async function loadSharedNotes() {
+    const container = document.getElementById('sharedNotesList');
+    if (!container) return;
+
+    const search = document.getElementById('sharedNotesSearch')?.value.trim() || '';
+    const domain = document.getElementById('sharedNotesDomainFilter')?.value || '';
+    const sort = document.getElementById('sharedNotesSort')?.value || 'newest';
+
+    container.innerHTML = '<div class="empty-state">Loading shared notes...</div>';
+    try {
+        let path = `/notes/shared?sort=${sort}`;
+        if (search) path += `&search=${encodeURIComponent(search)}`;
+        if (domain) path += `&domain=${encodeURIComponent(domain)}`;
+
+        const notes = await api(path);
+        if (!notes.length) {
+            container.innerHTML = '<div class="empty-state">No shared notes found for the selected criteria.</div>';
+            return;
+        }
+
+        container.innerHTML = notes.map(n => `
+            <div class="card" style="margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <span class="eyebrow">${escapeHtml(n.domain || 'Academic')} · ${escapeHtml(n.resource_type || 'Note')}</span>
+                        <h3 style="font-size:16px; margin:4px 0 6px;">${escapeHtml(n.title)}</h3>
+                        <p style="font-size:12px; color:var(--ink-soft); margin-bottom:8px;">
+                            ${escapeHtml(n.subject_name || '')} · Shared by <strong>${escapeHtml(n.uploader_name || 'Classmate')}</strong>
+                        </p>
+                    </div>
+                    <span class="pill">${escapeHtml(n.resource_type || 'Note')}</span>
+                </div>
+                <p style="font-size:13px; color:var(--ink); line-height:1.4; margin-bottom:10px;">
+                    ${escapeHtml(n.description || '')}
+                </p>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:8px;">
+                    <span style="font-size:11px; color:var(--ink-soft);">${new Date(n.created_at).toLocaleDateString()}</span>
+                    <div>
+                        ${n.file_url ? `<a href="${escapeHtml(n.file_url)}" target="_blank" class="btn small secondary">Open Link ↗</a>` : ''}
+                        ${n.file_path ? `<a href="/api/notes/download/${n.id}" class="btn small teal" target="_blank" download>Download File</a>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        container.innerHTML = '<div class="empty-state">Failed to load shared notes.</div>';
+    }
+}
+
 async function loadNotes(groupId) {
     const notes = await api('/notes/' + groupId);
-    document.getElementById('noteList').innerHTML = notes.length ? notes.map(n => `
+    const container = document.getElementById('noteList');
+    if (!container) return;
+    container.innerHTML = notes.length ? notes.map(n => `
         <div class="card" style="margin-bottom:10px;">
             <strong>${escapeHtml(n.title)}</strong>
             <p style="font-size:12px;">shared by Student #${escapeHtml(n.uploader_name || '...')}</p>
             ${n.file_url ? `<a href="${escapeHtml(n.file_url)}" target="_blank" class="pill">Open</a>` : ''}
         </div>
-    `).join('') : '<div class="empty-state">No notes here.</div>';
+    `).join('') : '<div class="empty-state">No group notes here yet.</div>';
 }
 
 async function loadGoals() {
     const goals = await api('/goals/' + STUDENT_ID);
-    document.getElementById('goalList').innerHTML = goals.length ? goals.map(g => `
-        <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between;">
+    const container = document.getElementById('goalList');
+    const alertBox = document.getElementById('goalReminderAlert');
+    if (!container) return;
+
+    // Check for any due reminders
+    const dueReminders = goals.filter(g => !g.is_completed && g.is_reminder_due);
+    if (dueReminders.length && alertBox) {
+        alertBox.style.display = 'block';
+        alertBox.innerHTML = `🔔 <strong>Study Goal Reminder:</strong> You have ${dueReminders.length} target goal(s) reaching reminder time: <em>${escapeHtml(dueReminders.map(g => g.goal_text).join(', '))}</em>`;
+    } else if (alertBox) {
+        alertBox.style.display = 'none';
+    }
+
+    container.innerHTML = goals.length ? goals.map(g => `
+        <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${g.is_completed ? '#28a745' : g.is_overdue ? '#dc3545' : g.is_reminder_due ? '#ffc107' : '#0366d6'};">
             <div>
-                <strong style="${g.is_completed ? 'text-decoration:line-through;' : ''}">${escapeHtml(g.goal_text)}</strong>
-                <p style="font-size:12px;">${g.target_date ? 'due ' + g.target_date : ''}</p>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <strong style="${g.is_completed ? 'text-decoration:line-through; color:var(--ink-soft);' : ''}">${escapeHtml(g.goal_text)}</strong>
+                    ${g.is_completed ? '<span class="pill accepted">✓ Done</span>' : ''}
+                    ${!g.is_completed && g.is_overdue ? '<span class="pill" style="background:#fde8e8; color:#c53030;">⚠️ Overdue</span>' : ''}
+                    ${!g.is_completed && g.is_reminder_due ? '<span class="pill" style="background:#fff3cd; color:#856404;">🔔 Reminder Due</span>' : ''}
+                </div>
+                <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">
+                    ${g.target_date ? 'Target: ' + g.target_date : ''}
+                    ${g.reminder_datetime ? ' · Reminder: ' + new Date(g.reminder_datetime).toLocaleString() : ''}
+                </p>
             </div>
-            <button class="btn small ${g.is_completed ? 'secondary' : 'teal'}" onclick="toggleGoal('${g.ROWID}', ${!g.is_completed})">
-                ${g.is_completed ? 'Undo' : 'Mark done'}
-            </button>
+            <div style="display:flex; gap:6px;">
+                <button class="btn small ${g.is_completed ? 'secondary' : 'teal'}" onclick="toggleGoal('${g.ROWID}', ${!g.is_completed})">
+                    ${g.is_completed ? 'Undo' : 'Mark done'}
+                </button>
+                <button class="btn small danger" onclick="deleteGoal('${g.ROWID}')">×</button>
+            </div>
         </div>
-    `).join('') : '<div class="empty-state">No goals yet.</div>';
+    `).join('') : '<div class="empty-state">No goals set yet. Set daily focus goals with reminders above!</div>';
 }
 
 async function toggleGoal(id, complete) {
@@ -524,6 +630,13 @@ async function toggleGoal(id, complete) {
     loadGoals();
 }
 
+async function deleteGoal(id) {
+    if (!confirm('Delete this study goal?')) return;
+    await api('/goals/' + id, { method: 'DELETE' });
+    loadGoals();
+}
+
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
 }
+

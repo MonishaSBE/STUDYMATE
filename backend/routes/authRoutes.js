@@ -13,12 +13,14 @@ router.post('/register', async (req, res) => {
     }
     
     const hash = await bcrypt.hash(password, 10);
-    const newUser = { id: db.nextId++, email, password_hash: hash };
+    const role = (email.includes('admin@') || db.users.length === 0) ? 'admin' : 'student';
+    const newUser = { id: db.nextId++, email, password_hash: hash, role };
     db.users.push(newUser);
     
     req.session.userId = newUser.id;
     req.session.email = email;
-    res.json({ status: 'success', data: { userId: newUser.id } });
+    req.session.role = role;
+    res.status(201).json({ status: 'success', data: { userId: newUser.id, role } });
 });
 
 router.post('/login', async (req, res) => {
@@ -31,7 +33,8 @@ router.post('/login', async (req, res) => {
     
     req.session.userId = user.id;
     req.session.email = user.email;
-    res.json({ status: 'success', data: { userId: user.id } });
+    req.session.role = user.role || 'student';
+    res.json({ status: 'success', data: { userId: user.id, role: req.session.role } });
 });
 
 router.post('/logout', (req, res) => {
@@ -41,8 +44,10 @@ router.post('/logout', (req, res) => {
 });
 
 router.get('/me', auth, (req, res) => {
+    const user = db.users.find(u => u.id === req.session.userId);
     const profile = db.profiles.find(p => p.user_id === req.session.userId);
-    res.json({ status: 'success', data: { userId: req.session.userId, email: req.session.email, profileId: profile?.id } });
+    const role = req.session.role || user?.role || 'student';
+    res.json({ status: 'success', data: { userId: req.session.userId, email: req.session.email, profileId: profile?.id, role } });
 });
 
 module.exports = router;

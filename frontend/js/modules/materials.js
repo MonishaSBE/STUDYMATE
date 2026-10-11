@@ -1,22 +1,33 @@
 /**
- * Feature Module 2 & 9: Study Material Library, Ratings, Bookmarks, and Preview
+ * Feature Module 2 & 9: Study Material Library, Open Educational Textbooks, Ratings, and Bookmarks
  */
 
 window.MaterialsModule = {
     currentSearch: '',
+    currentDomain: '',
     currentType: '',
     currentSort: 'newest',
     cachedMaterials: [],
+    cachedBooks: [],
 
     async init() {
         const searchInput = document.getElementById('mat_search_input');
+        const domainFilter = document.getElementById('mat_domain_filter');
         const typeFilter = document.getElementById('mat_type_filter');
-        const sortSelect = document.getElementById('mat_sort_select');
 
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.currentSearch = e.target.value.trim();
                 this.loadMaterials();
+                this.loadBooks();
+            });
+        }
+
+        if (domainFilter) {
+            domainFilter.addEventListener('change', (e) => {
+                this.currentDomain = e.target.value;
+                this.loadMaterials();
+                this.loadBooks();
             });
         }
 
@@ -24,17 +35,60 @@ window.MaterialsModule = {
             typeFilter.addEventListener('change', (e) => {
                 this.currentType = e.target.value;
                 this.loadMaterials();
+                this.loadBooks();
             });
         }
 
-        if (sortSelect) {
-            sortSelect.addEventListener('change', (e) => {
-                this.currentSort = e.target.value;
-                this.loadMaterials();
-            });
-        }
-
+        await this.loadBooks();
         await this.loadMaterials();
+    },
+
+    async loadBooks() {
+        const container = document.getElementById('libraryBooksList');
+        if (!container) return;
+
+        container.innerHTML = '<div class="empty-state">Loading educational textbooks...</div>';
+        try {
+            let query = '?';
+            if (this.currentSearch) query += `&search=${encodeURIComponent(this.currentSearch)}`;
+            if (this.currentDomain) query += `&domain=${encodeURIComponent(this.currentDomain)}`;
+
+            const books = await api(`/materials/books${query}`);
+            this.cachedBooks = books;
+
+            if (!books.length) {
+                container.innerHTML = '<div class="empty-state">No library books match your query.</div>';
+                return;
+            }
+
+            container.innerHTML = books.map(b => `
+                <div class="card material-item-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                            <span class="pill" style="background:#e8f0fe; color:#1967d2;">📖 ${escapeHtml(b.category || 'Textbook')}</span>
+                            <span class="pill accepted" style="font-size:11px;">${escapeHtml(b.license || 'Open Access')}</span>
+                        </div>
+
+                        <h3 style="font-size:16px; margin:6px 0;">${escapeHtml(b.title)}</h3>
+                        <p style="font-size:12px; color:var(--ink-soft); margin-bottom:8px;">
+                            <strong>Author:</strong> ${escapeHtml(b.author || 'Academic Authors')} ${b.publication_year ? `(${b.publication_year})` : ''}
+                        </p>
+                        <p style="font-size:13px; color:var(--ink); line-height:1.4; margin-bottom:12px;">
+                            ${escapeHtml(b.description || '')}
+                        </p>
+                    </div>
+
+                    <div style="border-top:1px solid var(--line); padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:11px; color:var(--ink-soft);">${escapeHtml(b.publisher || 'Open Publishing')}</span>
+                        ${b.access_url ? `
+                            <a href="${escapeHtml(b.access_url)}" target="_blank" rel="noopener noreferrer" class="btn small teal">Access Resource ↗</a>
+                        ` : '<span style="font-size:12px; color:var(--ink-soft);">In Library</span>'}
+                    </div>
+                </div>
+            `).join('');
+        } catch (err) {
+            container.innerHTML = '<div class="empty-state">Could not load library books.</div>';
+        }
     },
 
     async loadMaterials() {
@@ -45,13 +99,14 @@ window.MaterialsModule = {
         try {
             let query = `?sort=${this.currentSort}`;
             if (this.currentSearch) query += `&search=${encodeURIComponent(this.currentSearch)}`;
-            if (this.currentType) query += `&resource_type=${encodeURIComponent(this.currentType)}`;
+            if (this.currentDomain) query += `&domain=${encodeURIComponent(this.currentDomain)}`;
+            if (this.currentType && this.currentType !== 'textbook') query += `&resource_type=${encodeURIComponent(this.currentType)}`;
 
             const materials = await api(`/materials${query}`);
             this.cachedMaterials = materials;
 
             if (!materials.length) {
-                container.innerHTML = '<div class="empty-state">No academic materials found matching your criteria. Be the first to upload one!</div>';
+                container.innerHTML = '<div class="empty-state">No academic notes found matching criteria.</div>';
                 return;
             }
 
@@ -72,22 +127,15 @@ window.MaterialsModule = {
                     </p>
 
                     <div style="font-size:12px; color:var(--ink-soft); margin-bottom:10px; display:flex; flex-wrap:wrap; gap:8px;">
-                        <span>📚 ${escapeHtml(m.subject_name)}</span>
+                        <span>📚 ${escapeHtml(m.subject_name || m.domain || '')}</span>
                         <span>👤 ${escapeHtml(m.uploader_name || 'Student')}</span>
-                        <span>⭐ ${m.average_rating > 0 ? m.average_rating + '/5 (' + m.total_ratings + ')' : 'No ratings yet'}</span>
+                        <span>⭐ ${m.average_rating > 0 ? m.average_rating + '/5' : 'No ratings'}</span>
                         <span>👁️ ${m.views_count || 1} views</span>
                     </div>
 
-                    ${(m.tags || []).length ? `
-                        <div style="margin-bottom:12px; display:flex; flex-wrap:wrap; gap:4px;">
-                            ${m.tags.map(t => `<span class="pill tag-pill">${escapeHtml(t)}</span>`).join('')}
-                        </div>
-                    ` : ''}
-
-                    <div class="material-action-row">
+                    <div class="material-action-row" style="display:flex; gap:8px;">
                         <button class="btn small teal" onclick="MaterialsModule.openPreview(${m.id})">Preview & Study</button>
                         <a href="/api/materials/${m.id}/download" class="btn small secondary" target="_blank" download>Download</a>
-                        <button class="btn small" onclick="MaterialsModule.useInAiAssistant(${m.id})">Ask AI</button>
                     </div>
                 </div>
             `).join('');
@@ -98,9 +146,8 @@ window.MaterialsModule = {
 
     async toggleBookmark(materialId) {
         try {
-            const res = await api(`/materials/${materialId}/bookmark`, { method: 'POST' });
+            await api(`/materials/${materialId}/bookmark`, { method: 'POST' });
             await this.loadMaterials();
-            if (window.LearningHubModule) window.LearningHubModule.loadMetrics();
         } catch (err) {
             alert('Failed to update bookmark: ' + err.message);
         }
@@ -113,7 +160,7 @@ window.MaterialsModule = {
             if (!modal) return;
 
             document.getElementById('modal_mat_title').textContent = material.title;
-            document.getElementById('modal_mat_subject').textContent = `${material.subject_name} · ${formatResourceType(material.resource_type)}`;
+            document.getElementById('modal_mat_subject').textContent = `${material.subject_name || material.domain || ''} · ${formatResourceType(material.resource_type)}`;
             document.getElementById('modal_mat_desc').textContent = material.description || 'No extended description available.';
             document.getElementById('modal_mat_uploader').textContent = `Uploaded by ${material.uploader_name || 'Student'} on ${new Date(material.created_at).toLocaleDateString()}`;
             document.getElementById('modal_mat_stats').textContent = `${material.views_count} views · ${material.downloads_count} downloads · Rating: ${material.average_rating}/5`;
@@ -122,27 +169,28 @@ window.MaterialsModule = {
 
             // Setup Rating button
             const rateBtn = document.getElementById('modal_rate_btn');
-            rateBtn.onclick = () => MaterialsModule.rateMaterialPrompt(material.id);
+            if (rateBtn) rateBtn.onclick = () => MaterialsModule.rateMaterialPrompt(material.id);
 
             // Setup Report button
             const reportBtn = document.getElementById('modal_report_btn');
-            reportBtn.onclick = () => MaterialsModule.reportMaterialPrompt(material.id);
+            if (reportBtn) reportBtn.onclick = () => MaterialsModule.reportMaterialPrompt(material.id);
 
             // Quick actions
-            document.getElementById('modal_ai_btn').onclick = () => {
-                modal.style.display = 'none';
-                MaterialsModule.useInAiAssistant(material.id);
-            };
+            const quizBtn = document.getElementById('modal_quiz_btn');
+            if (quizBtn) {
+                quizBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    if (window.QuizzesModule) window.QuizzesModule.generateFromMaterial(material.id);
+                };
+            }
 
-            document.getElementById('modal_quiz_btn').onclick = () => {
-                modal.style.display = 'none';
-                QuizzesModule.generateFromMaterial(material.id);
-            };
-
-            document.getElementById('modal_flashcard_btn').onclick = () => {
-                modal.style.display = 'none';
-                FlashcardsModule.generateFromMaterial(material.id);
-            };
+            const fcBtn = document.getElementById('modal_flashcard_btn');
+            if (fcBtn) {
+                fcBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    if (window.FlashcardsModule) window.FlashcardsModule.generateFromMaterial(material.id);
+                };
+            }
 
             modal.style.display = 'flex';
         } catch (err) {
@@ -158,47 +206,37 @@ window.MaterialsModule = {
             alert('Please enter a valid rating between 1 and 5.');
             return;
         }
-        const review = prompt('Optional comments or review notes:', '') || '';
         try {
-            await api(`/materials/${id}/rate`, {
-                method: 'POST',
-                body: JSON.stringify({ rating, review })
-            });
-            alert('Thank you for rating this resource!');
+            await api(`/materials/${id}/rate`, { method: 'POST', body: JSON.stringify({ rating }) });
+            alert('Rating submitted. Thank you!');
             this.openPreview(id);
-            this.loadMaterials();
         } catch (err) {
-            alert(err.message);
+            alert('Failed to rate: ' + err.message);
         }
     },
 
     async reportMaterialPrompt(id) {
-        const reason = prompt('Please specify reason for reporting this material (e.g. Inappropriate content, copyright violation, inaccurate syllabus):');
+        const reason = prompt('Please explain the issue (e.g. incorrect syllabus, copyright, illegible):');
         if (!reason) return;
-        const details = prompt('Additional details (optional):') || '';
         try {
-            await api(`/materials/${id}/report`, {
-                method: 'POST',
-                body: JSON.stringify({ reason, details })
-            });
-            alert('Report submitted for moderator review.');
+            await api(`/materials/${id}/report`, { method: 'POST', body: JSON.stringify({ reason }) });
+            alert('Report submitted for admin review.');
         } catch (err) {
-            alert(err.message);
-        }
-    },
-
-    useInAiAssistant(materialId) {
-        const aiTab = document.querySelector('.tab[data-tab="ai"]');
-        if (aiTab) aiTab.click();
-
-        const docSelect = document.getElementById('ai_doc_select');
-        if (docSelect) {
-            docSelect.value = String(materialId);
+            alert('Failed to submit report: ' + err.message);
         }
     }
 };
 
 function formatResourceType(type) {
-    if (!type) return 'Document';
-    return type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const map = {
+        lecture_notes: 'Lecture Notes',
+        question_bank: 'Question Bank',
+        previous_exam: 'Previous Exam Paper',
+        revision_sheet: 'Revision Sheet',
+        subject_summary: 'Subject Summary',
+        lab_record: 'Lab Record',
+        study_guide: 'Study Guide',
+        textbook: 'Textbook'
+    };
+    return map[type] || 'Study Note';
 }

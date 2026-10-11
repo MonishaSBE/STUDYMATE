@@ -10,27 +10,157 @@ const mockDb = require('../mockDb');
 
 // In-memory data store for academic platform entities
 const fallbackData = {
+    academic_domains: [
+        { id: 1, name: 'Computer Science and Engineering', code: 'CSE', icon: '💻' },
+        { id: 2, name: 'Cybersecurity', code: 'CYBER', icon: '🛡️' },
+        { id: 3, name: 'Artificial Intelligence and Machine Learning', code: 'AIML', icon: '🤖' },
+        { id: 4, name: 'Data Science', code: 'DS', icon: '📊' },
+        { id: 5, name: 'Information Technology', code: 'IT', icon: '🌐' },
+        { id: 6, name: 'Electronics and Communication Engineering', code: 'ECE', icon: '📡' },
+        { id: 7, name: 'Electrical and Electronics Engineering', code: 'EEE', icon: '⚡' },
+        { id: 8, name: 'Mechanical Engineering', code: 'MECH', icon: '⚙️' },
+        { id: 9, name: 'Civil Engineering', code: 'CIVIL', icon: '🏗️' },
+        { id: 10, name: 'Business and Management', code: 'MGMT', icon: '📈' },
+        { id: 11, name: 'Mathematics', code: 'MATH', icon: '📐' },
+        { id: 12, name: 'Physics', code: 'PHYS', icon: '🔬' },
+        { id: 13, name: 'Chemistry', code: 'CHEM', icon: '🧪' }
+    ],
     institutions: [
-        { id: 1, name: 'RMK College of Engineering and Technology', code: 'RMKCET', location: 'Puduvoyal, Tamil Nadu' }
+        { id: 1, name: 'RMK College of Engineering and Technology', code: 'RMKCET', location: 'Puduvoyal, Tamil Nadu' },
+        { id: 2, name: 'Open Academic Consortium', code: 'OAC', location: 'Open Global Repository' }
     ],
     departments: [
         { id: 1, institution_id: 1, name: 'Computer Science and Engineering', code: 'CSE' },
-        { id: 2, institution_id: 1, name: 'Computer Science & Engineering (Cyber Security)', code: 'CSE-CYBER' }
+        { id: 2, institution_id: 1, name: 'Computer Science & Engineering (Cyber Security)', code: 'CSE-CYBER' },
+        { id: 3, institution_id: 2, name: 'Artificial Intelligence & Data Science', code: 'AI-DS' },
+        { id: 4, institution_id: 2, name: 'Electronics & Hardware Systems', code: 'ECE' },
+        { id: 5, institution_id: 2, name: 'Mechanical & Automation Engineering', code: 'MECH' },
+        { id: 6, institution_id: 2, name: 'Applied Mathematics & Sciences', code: 'MATH-SCI' }
     ],
     courses: [
-        { id: 1, department_id: 1, course_name: 'Data Structures and Algorithms', course_code: 'CS3301', semester: 3, academic_year: '2nd Year' },
-        { id: 2, department_id: 1, course_name: 'Database Management Systems', course_code: 'CS3492', semester: 4, academic_year: '2nd Year' },
-        { id: 3, department_id: 1, course_name: 'Design and Analysis of Algorithms', course_code: 'CS3401', semester: 4, academic_year: '2nd Year' },
-        { id: 4, department_id: 1, course_name: 'Operating Systems', course_code: 'CS3451', semester: 4, academic_year: '2nd Year' },
-        { id: 5, department_id: 1, course_name: 'Computer Networks', course_code: 'CS3591', semester: 5, academic_year: '3rd Year' },
-        { id: 6, department_id: 1, course_name: 'Compiler Design', course_code: 'CS3501', semester: 5, academic_year: '3rd Year' },
-        { id: 7, department_id: 1, course_name: 'Artificial Intelligence and Machine Learning', course_code: 'CS3691', semester: 6, academic_year: '3rd Year' },
-        { id: 8, department_id: 1, course_name: 'Cloud Computing and DevOps', course_code: 'CS3701', semester: 7, academic_year: '4th Year' },
-        { id: 9, department_id: 2, course_name: 'Foundations of Cyber Security', course_code: 'CB3301', semester: 3, academic_year: '2nd Year' },
-        { id: 10, department_id: 2, course_name: 'Cryptography and Network Security', course_code: 'CB3401', semester: 4, academic_year: '2nd Year' },
-        { id: 11, department_id: 2, course_name: 'Ethical Hacking and Penetration Testing', course_code: 'CB3501', semester: 5, academic_year: '3rd Year' },
-        { id: 12, department_id: 2, course_name: 'Digital Forensics and Incident Response', course_code: 'CB3601', semester: 6, academic_year: '3rd Year' },
-        { id: 13, department_id: 2, course_name: 'Cyber Threat Intelligence & SOC Operations', course_code: 'CB3701', semester: 7, academic_year: '4th Year' }
+        { id: 1, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Data Structures and Algorithms', course_code: 'CS3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Trees, balanced search structures, graphs, dynamic programming, and complexity.' },
+        { id: 2, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Database Management Systems', course_code: 'CS3492', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Relational data model, SQL, normalization (1NF-BCNF), and ACID concurrency.' },
+        { id: 3, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Design and Analysis of Algorithms', course_code: 'CS3401', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Asymptotic analysis, divide & conquer, greedy strategy, and NP-completeness.' },
+        { id: 4, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Operating Systems', course_code: 'CS3451', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Process scheduling, virtual memory paging, deadlock avoidance, and file systems.' },
+        { id: 5, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Computer Networks', course_code: 'CS3591', semester: 5, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'OSI/TCP-IP stacks, routing protocols, flow control, and transport layer security.' },
+        { id: 6, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Compiler Design', course_code: 'CS3501', semester: 5, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Lexical analysis, syntax trees, LR parsers, and intermediate code generation.' },
+        { id: 7, department_id: 3, domain: 'Artificial Intelligence and Machine Learning', course_name: 'Artificial Intelligence and Machine Learning', course_code: 'CS3691', semester: 6, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Supervised/unsupervised models, neural networks, gradient descent, and evaluation metrics.' },
+        { id: 8, department_id: 1, domain: 'Information Technology', course_name: 'Cloud Computing and DevOps', course_code: 'CS3701', semester: 7, academic_year: '4th Year', academic_level: 'Undergraduate', description: 'Containerization, microservices, AWS/GCP paradigms, and CI/CD automation pipelines.' },
+        { id: 9, department_id: 2, domain: 'Cybersecurity', course_name: 'Foundations of Cyber Security', course_code: 'CB3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Security principles, authentication tokens, vulnerabilities, and defense models.' },
+        { id: 10, department_id: 2, domain: 'Cybersecurity', course_name: 'Cryptography and Network Security', course_code: 'CB3401', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Block ciphers, public-key RSA, Diffie-Hellman, SHA-256, and digital certificates.' },
+        { id: 11, department_id: 2, domain: 'Cybersecurity', course_name: 'Ethical Hacking and Penetration Testing', course_code: 'CB3501', semester: 5, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Reconnaissance, vulnerability scanning, exploitation, and mitigation auditing.' },
+        { id: 12, department_id: 2, domain: 'Cybersecurity', course_name: 'Digital Forensics and Incident Response', course_code: 'CB3601', semester: 6, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Evidence preservation, memory analysis, log examination, and chain of custody.' },
+        { id: 13, department_id: 3, domain: 'Data Science', course_name: 'Data Science & Statistical Inference', course_code: 'DS3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Exploratory data analysis, probability distributions, regression, and PCA.' },
+        { id: 14, department_id: 4, domain: 'Electronics and Communication Engineering', course_name: 'Digital Signal Processing & Microcontrollers', course_code: 'EC3401', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'FFT algorithms, FIR/IIR filters, ARM architectures, and embedded peripherals.' },
+        { id: 15, department_id: 5, domain: 'Mechanical Engineering', course_name: 'Thermodynamics and Fluid Mechanics', course_code: 'ME3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Carnot cycles, entropy principles, Navier-Stokes formulation, and heat transfer.' },
+        { id: 16, department_id: 6, domain: 'Mathematics', course_name: 'Discrete Mathematics and Graph Theory', course_code: 'MA3354', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Propositional logic, recurrence relations, trees, planar graphs, and combinatorics.' }
+    ],
+    library_books: [
+        {
+            id: 1,
+            title: 'Computer Networks: A Systems Approach',
+            author: 'Larry L. Peterson and Bruce S. Davie',
+            publisher: 'Morgan Kaufmann / Open Access Edition',
+            publication_year: 2021,
+            domain: 'Computer Science and Engineering',
+            category: 'Computer Networks',
+            subject: 'Computer Networks',
+            description: 'Comprehensive open-access textbook exploring the foundational architecture of the Internet, routing algorithms, transport protocols, and wireless systems.',
+            resource_type: 'Open Access Textbook',
+            access_url: 'https://book.systemsapproach.net/',
+            license_type: 'Creative Commons CC BY 4.0',
+            cover_color: '#2f8f8a'
+        },
+        {
+            id: 2,
+            title: 'Security Engineering: A Guide to Building Dependable Distributed Systems',
+            author: 'Ross J. Anderson',
+            publisher: 'Wiley / Author Open Edition',
+            publication_year: 2020,
+            domain: 'Cybersecurity',
+            category: 'Cybersecurity books',
+            subject: 'Cryptography and Network Security',
+            description: 'The definitive cybersecurity authority covering cryptography, security protocols, access control, side-channel attacks, and resilient software defense.',
+            resource_type: 'Open Access Book',
+            access_url: 'https://www.cl.cam.ac.uk/~rja14/book.html',
+            license_type: 'Authorized Author Public Access',
+            cover_color: '#c1503f'
+        },
+        {
+            id: 3,
+            title: 'Understanding Machine Learning: From Theory to Algorithms',
+            author: 'Shai Shalev-Shwartz and Shai Ben-David',
+            publisher: 'Cambridge University Press / Open PDF',
+            publication_year: 2014,
+            domain: 'Artificial Intelligence and Machine Learning',
+            category: 'AI and Machine Learning resources',
+            subject: 'Artificial Intelligence and Machine Learning',
+            description: 'Rigorous theoretical foundations of PAC learning, VC-dimension, Support Vector Machines, boosting, neural networks, and stochastic optimization.',
+            resource_type: 'Open Educational Resource',
+            access_url: 'https://www.cs.huji.ac.il/~shais/UnderstandingMachineLearning/',
+            license_type: 'Authorized Open PDF for Academic Use',
+            cover_color: '#34495e'
+        },
+        {
+            id: 4,
+            title: 'Operating Systems: Three Easy Pieces',
+            author: 'Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau',
+            publisher: 'Arpaci-Dusseau Books',
+            publication_year: 2018,
+            domain: 'Computer Science and Engineering',
+            category: 'Operating Systems',
+            subject: 'Operating Systems',
+            description: 'The standard classic curriculum covering the three pillars of operating systems: Virtualization, Concurrency, and Persistence.',
+            resource_type: 'Open Access Textbook',
+            access_url: 'https://pages.cs.wisc.edu/~remzi/OSTEP/',
+            license_type: 'Free Online Educational Edition',
+            cover_color: '#2980b9'
+        },
+        {
+            id: 5,
+            title: 'Database Design and Implementation: Second Edition',
+            author: 'Edward Sciore',
+            publisher: 'Springer / Open Educational Resource',
+            publication_year: 2020,
+            domain: 'Computer Science and Engineering',
+            category: 'Database Management Systems',
+            subject: 'Database Management Systems',
+            description: 'Comprehensive engineering treatment of relational databases, query parsing, B-tree indexing, record management, and transaction logging.',
+            resource_type: 'Academic Reference',
+            access_url: 'https://link.springer.com/book/10.1007/978-3-030-33836-7',
+            license_type: 'Open Access Chapter Resources',
+            cover_color: '#8e44ad'
+        },
+        {
+            id: 6,
+            title: 'Foundations of Data Science',
+            author: 'Avrim Blum, John Hopcroft, and Ravindran Kannan',
+            publisher: 'Cambridge University Press',
+            publication_year: 2020,
+            domain: 'Data Science',
+            category: 'Data Science resources',
+            subject: 'Data Science & Statistical Inference',
+            description: 'Covers high-dimensional space, singular value decomposition, random walks, Markov chains, graphical models, and clustering algorithms.',
+            resource_type: 'Open Access Monograph',
+            access_url: 'https://www.cs.cornell.edu/jeh/book.pdf',
+            license_type: 'Authorized Academic PDF',
+            cover_color: '#16a085'
+        },
+        {
+            id: 7,
+            title: 'Discrete Mathematics: An Open Introduction',
+            author: 'Oscar Levin',
+            publisher: 'School of Mathematical Sciences / Open Access',
+            publication_year: 2021,
+            domain: 'Mathematics',
+            category: 'Mathematics',
+            subject: 'Discrete Mathematics and Graph Theory',
+            description: 'A free, open-source textbook for discrete mathematics covering counting, sequences, logic, proofs, and graph theory.',
+            resource_type: 'Open Educational Resource',
+            access_url: 'http://discrete.openmathbooks.org/dmoi3.html',
+            license_type: 'Creative Commons CC BY-SA',
+            cover_color: '#d35400'
+        }
     ],
     materials: [
         {
@@ -239,6 +369,39 @@ const fallbackData = {
     ],
     community_votes: {},
     ai_conversations: [],
+    // Direct Messaging & Conversations between accepted study partners
+    conversations: [
+        {
+            id: 1,
+            type: 'direct',
+            participants: [1, 2], // Alex Johnson (1) & Sam Smith (2)
+            title: null,
+            created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+            updated_at: new Date(Date.now() - 3600000).toISOString()
+        }
+    ],
+    messages: [
+        {
+            id: 1,
+            conversation_id: 1,
+            sender_id: 2,
+            sender_name: 'Sam Smith',
+            content: 'Hey Alex! Glad we connected. Are you studying Unit 3 of Machine Learning today?',
+            message_type: 'text',
+            status: 'read',
+            created_at: new Date(Date.now() - 3600000 * 3).toISOString()
+        },
+        {
+            id: 2,
+            conversation_id: 1,
+            sender_id: 1,
+            sender_name: 'Alex Johnson',
+            content: 'Hey Sam! Yes, reviewing backpropagation and gradient descent algorithms right now.',
+            message_type: 'text',
+            status: 'read',
+            created_at: new Date(Date.now() - 3600000).toISOString()
+        }
+    ],
     nextId: 100
 };
 

@@ -260,6 +260,64 @@ function generateConceptMapFromContent(text, title, subject) {
     };
 }
 
+// Chat-integrated academic assistant and communication drafting
+async function handleChatAssistantPrompt(promptText, mode = 'study_help', userSubject = 'Computer Science') {
+    if (isAiConfigured()) {
+        let systemContext = '';
+        if (mode === 'draft_intro') {
+            systemContext = `You are an academic communication helper for university students. Draft a warm, respectful, and concise study partner introductory message (2-3 sentences) proposing collaboration. The user context is: ${userSubject}.`;
+        } else if (mode === 'draft_schedule') {
+            systemContext = `You are a student collaboration assistant. Draft a polite message proposing a study session time and agenda for exam preparation in ${userSubject}.`;
+        } else if (mode === 'study_plan') {
+            systemContext = `You are an academic coach. Provide a structured, realistic study session plan or topic breakdown for ${userSubject}.`;
+        } else {
+            systemContext = `You are StudyMate AI Study Assistant, an expert academic tutor for university students in ${userSubject}. Explain concepts clearly with examples, clarify doubts, explain programming or algorithmic principles concisely.`;
+        }
+
+        const fullPrompt = `${systemContext}\n\nStudent Query: ${promptText}`;
+        const externalResponse = await callGeminiApi(fullPrompt);
+        if (externalResponse) {
+            return {
+                response: externalResponse,
+                provider: 'Google Gemini'
+            };
+        }
+    }
+
+    // Local high-yield academic response generator
+    let fallbackReply = '';
+    const qLower = promptText.toLowerCase();
+
+    if (mode === 'draft_intro') {
+        fallbackReply = `Hi! I noticed we are both taking ${userSubject || 'similar courses'}. Would you be interested in pairing up as study partners to prepare for the upcoming midterms and review problem sets together?`;
+    } else if (mode === 'draft_schedule') {
+        fallbackReply = `Hey! Are you free this Thursday evening around 6:00 PM for an online study session? We could go over the key algorithms and practice solving previous semester questions.`;
+    } else if (mode === 'study_plan') {
+        fallbackReply = `Here is a high-yield 2-hour study session plan for **${userSubject}**:\n\n1. **Phase 1 (30 mins)**: Core Theory & Invariant Definitions review.\n2. **Phase 2 (45 mins)**: Solve 2-3 standard algorithmic numerical problems together.\n3. **Phase 3 (30 mins)**: Cross-quiz each other on edge cases & time complexities.\n4. **Phase 4 (15 mins)**: Summary wrap-up and assign next topic goals.`;
+    } else {
+        // Concept explanation / general academic question
+        fallbackReply = `### 📚 StudyMate Academic Assistance: ${userSubject}
+
+Regarding your query: *"**${promptText}**"*
+
+**1. Core Concept & Principles:**
+This topic centers on foundational correctness invariants and state preservation. Understanding the formal definitions and operational contracts is essential before tackling numerical problem sets.
+
+**2. Key Exam Points to Focus On:**
+- Step-by-step state transitions or algorithmic progression.
+- Asymptotic time and space complexity trade-offs ($O(n \\log n)$ vs $O(n)$ bounds).
+- Edge conditions (empty input, null pointers, bounded buffer limits).
+
+**3. Next Action:**
+Review the corresponding lecture notes in the **Study Library** tab and test your comprehension using the **Quizzes** generator!`;
+    }
+
+    return {
+        response: fallbackReply,
+        provider: 'StudyMate Academic Engine (Local)'
+    };
+}
+
 module.exports = {
     isAiConfigured,
     callGeminiApi,
@@ -268,5 +326,6 @@ module.exports = {
     generateStructuredNotes,
     generateQuestionsFromContent,
     generateFlashcardsFromContent,
-    generateConceptMapFromContent
+    generateConceptMapFromContent,
+    handleChatAssistantPrompt
 };

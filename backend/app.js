@@ -40,6 +40,7 @@ app.use('/api/flashcards', require('./routes/flashcardRoutes'));
 app.use('/api/concept-maps', require('./routes/conceptMapRoutes'));
 app.use('/api/community', require('./routes/communityRoutes'));
 app.use('/api/hub', require('./routes/dashboardHubRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 
 // Serve uploaded files securely
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

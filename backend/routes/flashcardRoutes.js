@@ -5,21 +5,37 @@ const { fallbackData } = require('../services/storageAdapter');
 const { extractTextFromDocument } = require('../services/documentExtractor');
 const { generateFlashcardsFromContent } = require('../services/aiService');
 
-// 1. Get Flashcard Decks (User's private decks + public decks)
+// 1. Get Flashcard Decks with Domain and Subject Filters
 router.get('/decks', auth, (req, res) => {
     const userId = req.session.userId;
-    const decks = fallbackData.flashcard_decks
+    const { domain, search, subject } = req.query;
+
+    let decks = fallbackData.flashcard_decks
         .filter(d => d.user_id === userId || d.is_public)
         .map(d => ({
             id: d.id,
             title: d.title,
             subject: d.subject,
+            domain: d.domain || 'Computer Science and Engineering',
             description: d.description,
             is_public: d.is_public,
             card_count: (d.cards || []).length,
             is_owner: d.user_id === userId,
             created_at: d.created_at
         }));
+
+    if (search) {
+        const sLower = search.toLowerCase();
+        decks = decks.filter(d => d.title.toLowerCase().includes(sLower) || d.subject.toLowerCase().includes(sLower));
+    }
+
+    if (domain) {
+        decks = decks.filter(d => d.domain && d.domain.toLowerCase() === domain.toLowerCase());
+    }
+
+    if (subject) {
+        decks = decks.filter(d => d.subject && d.subject.toLowerCase().includes(subject.toLowerCase()));
+    }
 
     res.json({ status: 'success', data: decks });
 });

@@ -29,10 +29,46 @@ const upload = multer({
     }
 });
 
-// 1. Search & Filter Study Materials (Feature Module 2)
+// 0. Search & Filter Educational Library Books & Reference Materials
+router.get('/books', auth, async (req, res) => {
+    try {
+        const { search, domain, category } = req.query;
+        let books = fallbackData.library_books || [];
+
+        if (search) {
+            const sLower = search.toLowerCase();
+            books = books.filter(b => 
+                b.title.toLowerCase().includes(sLower) ||
+                b.author.toLowerCase().includes(sLower) ||
+                (b.description && b.description.toLowerCase().includes(sLower)) ||
+                (b.category && b.category.toLowerCase().includes(sLower)) ||
+                (b.subject && b.subject.toLowerCase().includes(sLower))
+            );
+        }
+
+        if (domain) {
+            books = books.filter(b => b.domain && b.domain.toLowerCase() === domain.toLowerCase());
+        }
+
+        if (category) {
+            books = books.filter(b => b.category && b.category.toLowerCase() === category.toLowerCase());
+        }
+
+        const enriched = books.map(b => ({
+            ...b,
+            is_bookmarked: (fallbackData.bookmarks || []).some(bk => bk.user_id === req.session.userId && bk.book_id === b.id)
+        }));
+
+        res.json({ status: 'success', data: enriched });
+    } catch (err) {
+        res.status(500).json({ status: 'failure', message: err.message });
+    }
+});
+
+// 1. Search & Filter Study Materials & Library Books
 router.get('/', auth, async (req, res) => {
     try {
-        const { search, course_id, subject, resource_type, sort } = req.query;
+        const { search, course_id, subject, resource_type, domain, category, sort } = req.query;
         let materials = [...fallbackData.materials];
 
         if (search) {
@@ -40,9 +76,20 @@ router.get('/', auth, async (req, res) => {
             materials = materials.filter(m =>
                 m.title.toLowerCase().includes(sLower) ||
                 (m.description && m.description.toLowerCase().includes(sLower)) ||
-                m.subject_name.toLowerCase().includes(sLower) ||
+                (m.subject_name && m.subject_name.toLowerCase().includes(sLower)) ||
+                (m.author && m.author.toLowerCase().includes(sLower)) ||
+                (m.publisher && m.publisher.toLowerCase().includes(sLower)) ||
+                (m.domain && m.domain.toLowerCase().includes(sLower)) ||
                 (m.tags && m.tags.some(t => t.toLowerCase().includes(sLower)))
             );
+        }
+
+        if (domain) {
+            materials = materials.filter(m => m.domain && m.domain.toLowerCase() === domain.toLowerCase());
+        }
+
+        if (category) {
+            materials = materials.filter(m => m.category && m.category.toLowerCase() === category.toLowerCase());
         }
 
         if (course_id) {
@@ -50,7 +97,7 @@ router.get('/', auth, async (req, res) => {
         }
 
         if (subject) {
-            materials = materials.filter(m => m.subject_name.toLowerCase().includes(subject.toLowerCase()));
+            materials = materials.filter(m => m.subject_name && m.subject_name.toLowerCase().includes(subject.toLowerCase()));
         }
 
         if (resource_type) {
@@ -279,6 +326,30 @@ router.delete('/:id', auth, (req, res) => {
     }
 
     res.json({ status: 'success', message: 'Material deleted' });
+});
+
+// 9. Edit Own Material Metadata
+router.put('/:id', auth, (req, res) => {
+    const id = Number(req.params.id);
+    const material = fallbackData.materials.find(m => m.id === id);
+
+    if (!material) {
+        return res.status(404).json({ status: 'failure', message: 'Material not found' });
+    }
+
+    if (material.uploaded_by !== req.session.userId) {
+        return res.status(403).json({ status: 'failure', message: 'Unauthorized: Cannot edit another student\'s material' });
+    }
+
+    const { title, description, domain, subject_name, resource_type, tags } = req.body;
+    if (title) material.title = title.trim();
+    if (description !== undefined) material.description = description.trim();
+    if (domain) material.domain = domain;
+    if (subject_name) material.subject_name = subject_name.trim();
+    if (resource_type) material.resource_type = resource_type;
+    if (tags) material.tags = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim()).filter(Boolean);
+
+    res.json({ status: 'success', message: 'Material updated successfully', data: material });
 });
 
 module.exports = router;

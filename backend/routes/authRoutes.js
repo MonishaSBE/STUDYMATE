@@ -163,6 +163,19 @@ router.get('/me', auth, (req, res) => {
 
 // --- Google OAuth 2.0 Routes ---
 
+// Helper to dynamically resolve OAuth callback URL based on environment or active domain
+function getOAuthCallbackUrl(req) {
+    if (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.trim()) {
+        return process.env.GOOGLE_CALLBACK_URL.trim();
+    }
+    if (process.env.APP_URL && process.env.APP_URL.trim()) {
+        return `${process.env.APP_URL.trim().replace(/\/$/, '')}/api/auth/google/callback`;
+    }
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+    return `${proto}://${host}/api/auth/google/callback`;
+}
+
 // GET /api/auth/google — Redirect to Google's OAuth consent screen
 router.get('/google', (req, res) => {
     if (!isGoogleOAuthConfigured()) {
@@ -172,7 +185,8 @@ router.get('/google', (req, res) => {
         });
     }
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const callbackUrl = encodeURIComponent(process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback');
+    const resolvedCallback = getOAuthCallbackUrl(req);
+    const callbackUrl = encodeURIComponent(resolvedCallback);
     const scope = encodeURIComponent('openid email profile');
     const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${callbackUrl}&response_type=code&scope=${scope}&access_type=offline&prompt=select_account`;
     res.redirect(googleOAuthUrl);
@@ -194,12 +208,13 @@ router.get('/google/callback', async (req, res) => {
         // Exchange code for tokens
         const https = require('https');
         const querystring = require('querystring');
+        const resolvedCallback = getOAuthCallbackUrl(req);
 
         const tokenParams = querystring.stringify({
             code,
             client_id: process.env.GOOGLE_CLIENT_ID,
             client_secret: process.env.GOOGLE_CLIENT_SECRET,
-            redirect_uri: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback',
+            redirect_uri: resolvedCallback,
             grant_type: 'authorization_code'
         });
 

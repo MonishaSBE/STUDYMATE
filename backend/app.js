@@ -9,6 +9,9 @@ const { connectDB } = require('./config/mongodb');
 
 const app = express();
 
+// Enable trust proxy for cloud deployment (e.g., Render, Railway, Heroku) behind HTTPS reverse proxies
+app.set('trust proxy', 1);
+
 // Initialize MongoDB connection on launch
 connectDB();
 
@@ -20,6 +23,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'super_secret_studymate_key',
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 day
         httpOnly: true,

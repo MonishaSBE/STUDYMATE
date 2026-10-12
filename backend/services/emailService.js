@@ -86,7 +86,7 @@ async function sendPartnerRequestEmail({ senderName, senderEmail, receiverName, 
 
     <div style="text-align:center; margin-top:24px;">
       <p style="font-size:13px; color:#666;">Log in to StudyMate to accept or decline this request:</p>
-      <a href="http://localhost:3000" class="btn">Open StudyMate & Respond →</a>
+      <a href="${(process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '')}/dashboard.html" class="btn">Open StudyMate & Respond →</a>
     </div>
   </div>
   <div class="footer">
@@ -136,7 +136,7 @@ async function sendRequestAcceptedEmail({ accepterName, senderName, senderEmail,
     <div style="font-size:48px; margin-bottom:12px;">🎉</div>
     <h2 style="color:#1e3a5f; margin:0 0 10px;">You've got a new study partner!</h2>
     <p style="color:#555; font-size:14px;">Hi <strong>${escapeHtml(senderName)}</strong>, <strong>${escapeHtml(accepterName)}</strong> accepted your study partner request. You can now chat and coordinate study sessions directly on StudyMate.</p>
-    <a href="${dashboardUrl || 'http://localhost:3000/dashboard.html'}" class="btn">Go to StudyMate Chat →</a>
+    <a href="${dashboardUrl || ((process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '') + '/dashboard.html')}" class="btn">Go to StudyMate Chat →</a>
   </div>
   <div class="footer">StudyMate Academic Platform</div>
 </div>

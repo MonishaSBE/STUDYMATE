@@ -274,9 +274,7 @@ router.post('/requests/:id/accept', auth, async (req, res) => {
                 accepterName: accepterProfile?.name || studentProfile.name || 'Your classmate',
                 senderName: senderUser.name || senderUser.email,
                 senderEmail: senderUser.email,
-                dashboardUrl: process.env.GOOGLE_CALLBACK_URL
-                    ? process.env.GOOGLE_CALLBACK_URL.replace('/api/auth/google/callback', '/dashboard.html')
-                    : 'http://localhost:3000/dashboard.html'
+                dashboardUrl: `${(process.env.APP_URL || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000'}`).replace(/\/$/, '')}/dashboard.html`
             }).catch(() => {});
         }
     } catch (emailErr) {
@@ -414,7 +412,7 @@ router.post('/requests', auth, async (req, res) => {
                 receiverName: receiver.name,
                 receiverEmail: receiverUser.email,
                 introMessage: newRequest.intro_message || '',
-                acceptUrl: 'http://localhost:3000/dashboard.html'
+                acceptUrl: `${(process.env.APP_URL || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000'}`).replace(/\/$/, '')}/dashboard.html`
             }).catch(() => {});
         }
     } catch (emailErr) {

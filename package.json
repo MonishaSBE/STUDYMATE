@@ -14,8 +14,10 @@
     "express": "^4.19.2",
     "express-mysql-session": "^2.1.8",
     "express-session": "^1.18.0",
+    "mongoose": "^9.11.1",
     "multer": "^2.4.0",
     "mysql2": "^3.9.7",
+    "nodemailer": "^10.1.0",
     "pdf-parse": "^2.4.5"
   }
 }

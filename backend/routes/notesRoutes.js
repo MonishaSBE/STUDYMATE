@@ -160,7 +160,7 @@ router.get('/my-uploads', auth, (req, res) => {
 });
 
 // 3. POST /api/notes - Create/upload note (supports URL or file upload, backward compatible with group notes)
-router.post('/', auth, upload.single('document'), (req, res) => {
+router.post('/', auth, upload.single('document'), async (req, res) => {
     try {
         const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
         const studentId = studentProfile ? studentProfile.id : req.session.userId;
@@ -192,7 +192,7 @@ router.post('/', auth, upload.single('document'), (req, res) => {
             created_at: new Date().toISOString()
         };
 
-        db.notes.push(newNote);
+        await db.saveNote(newNote);
 
         // Also make eligible notes visible in Study Library if public
         if (!newNote.group_id && newNote.visibility === 'public') {
@@ -226,43 +226,39 @@ router.get('/download/:id', auth, (req, res) => {
     try {
         const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
         const studentId = studentProfile ? studentProfile.id : null;
-        const id = req.params.id;
+        let rawId = req.params.id;
+        let numId = Number(String(rawId).replace('mat_', ''));
 
-        // Check if material ref
-        if (String(id).startsWith('mat_')) {
-            const matId = Number(id.replace('mat_', ''));
-            const mat = fallbackData.materials.find(m => m.id === matId);
-            if (!mat) return res.status(404).json({ status: 'failure', message: 'Resource not found' });
-            if (mat.file_path && fs.existsSync(mat.file_path)) {
-                return res.download(mat.file_path, mat.file_name || 'StudyMate_Document.pdf');
-            }
-            res.setHeader('Content-Disposition', `attachment; filename="${mat.file_name || 'StudyMate_Document.txt'}"`);
-            return res.send(`Title: ${mat.title}\nSubject: ${mat.subject_name}\nDescription: ${mat.description}`);
+        // Search in db.notes first, then fallbackData.materials
+        let note = db.notes.find(n => n.ROWID == rawId || n.ROWID == numId || n.id == rawId || n.id == numId);
+        let mat = fallbackData.materials.find(m => m.id == numId || m.id == rawId);
+
+        const item = note || mat;
+        if (!item) {
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            return res.status(404).send('StudyMate Error: The requested document or note was not found.');
         }
 
-        const note = db.notes.find(n => n.ROWID == id);
-        if (!note) return res.status(404).json({ status: 'failure', message: 'Note not found' });
-
-        // Enforce group membership if group-restricted
-        if (note.group_id) {
-            const grp = db.groups.find(g => g.ROWID == note.group_id);
-            if (grp && !(grp.members || []).includes(studentId)) {
-                return res.status(403).json({ status: 'failure', message: 'Unauthorized: You are not a member of this study group' });
-            }
+        // If note has a physical file uploaded
+        const filePath = item.file_path;
+        if (filePath && fs.existsSync(filePath)) {
+            const fileName = item.file_name || `${(item.title || 'Note').replace(/[^a-zA-Z0-9_\-\.]/g, '_')}${path.extname(filePath) || '.pdf'}`;
+            return res.download(filePath, fileName);
         }
 
-        if (note.file_path && fs.existsSync(note.file_path)) {
-            return res.download(note.file_path, note.file_name || `${note.title}.pdf`);
+        // If note has an external link/URL
+        if (item.file_url && item.file_url !== '#') {
+            return res.redirect(item.file_url);
         }
 
-        if (note.file_url) {
-            return res.redirect(note.file_url);
-        }
-
-        res.setHeader('Content-Disposition', `attachment; filename="${note.title.replace(/\s+/g, '_')}.txt"`);
-        res.send(`StudyMate Shared Note\n\nTitle: ${note.title}\nSubject: ${note.subject}\nDescription: ${note.description}\nUploader: ${note.uploader_name}`);
+        // Fallback for notes created without physical file: send as formatted readable document (.txt/.md)
+        const safeTitle = (item.title || 'StudyMate_Note').replace(/[^a-zA-Z0-9_\-]/g, '_');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.txt"`);
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        return res.send(`=========================================\nStudyMate Academic Resource\n=========================================\n\nTitle: ${item.title}\nSubject: ${item.subject || item.subject_name || 'General'}\nDomain: ${item.domain || 'Academic'}\nUploaded by: ${item.uploader_name || 'Student'}\nDate: ${new Date(item.created_at || Date.now()).toLocaleDateString()}\n\nContent & Summary:\n${item.description || 'No additional content provided.'}\n`);
     } catch (err) {
-        res.status(500).json({ status: 'failure', message: err.message });
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.status(500).send('Error downloading file: ' + err.message);
     }
 });
 

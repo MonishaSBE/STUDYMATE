@@ -22,59 +22,86 @@ function isAiConfigured() {
 /**
  * Call Gemini API if GEMINI_API_KEY is configured in .env
  */
+let lastGeminiError = null;
+
 async function callGeminiApi(promptText) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return null;
+    const rawKey = process.env.GEMINI_API_KEY;
+    if (!rawKey || !rawKey.trim()) return null;
+    const apiKey = rawKey.trim().replace(/^['"]|['"]$/g, '');
+
+    if (!apiKey.startsWith('AIzaSy')) {
+        console.warn(`[AIService] Warning: GEMINI_API_KEY does not start with standard Google AI Studio prefix 'AIzaSy'. Free API keys can be generated at https://aistudio.google.com/app/apikey`);
+    }
 
     const payload = JSON.stringify({
         contents: [{
             parts: [{ text: promptText }]
         }],
         generationConfig: {
-            temperature: 0.2,
+            temperature: 0.3,
             maxOutputTokens: 2048
         }
     });
 
-    return new Promise((resolve, reject) => {
-        const req = https.request({
-            hostname: 'generativelanguage.googleapis.com',
-            path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(payload)
-            }
-        }, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed.candidates && parsed.candidates[0]?.content?.parts?.[0]?.text) {
-                        resolve(parsed.candidates[0].content.parts[0].text);
-                    } else {
-                        resolve(null);
-                    }
-                } catch (e) {
-                    resolve(null);
+    const requestModel = (model) => {
+        return new Promise((resolve) => {
+            const req = https.request({
+                hostname: 'generativelanguage.googleapis.com',
+                path: `/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload)
                 }
+            }, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.candidates && parsed.candidates[0]?.content?.parts?.[0]?.text) {
+                            lastGeminiError = null;
+                            resolve({ success: true, text: parsed.candidates[0].content.parts[0].text });
+                        } else {
+                            if (parsed.error) {
+                                console.warn(`[AIService] Gemini API error (${parsed.error.code} - ${model}): ${parsed.error.message}`);
+                                lastGeminiError = parsed.error.message;
+                            }
+                            resolve({ success: false, error: parsed.error });
+                        }
+                    } catch (e) {
+                        resolve({ success: false, error: e.message });
+                    }
+                });
             });
-        });
 
-        req.on('error', (e) => {
-            console.error('[AIService] Gemini request error:', e.message);
-            resolve(null);
-        });
+            req.on('error', (e) => {
+                console.error('[AIService] Gemini connection error:', e.message);
+                lastGeminiError = e.message;
+                resolve({ success: false, error: e.message });
+            });
 
-        req.setTimeout(8000, () => {
-            req.destroy();
-            resolve(null);
-        });
+            req.setTimeout(9000, () => {
+                req.destroy();
+                lastGeminiError = 'Request timed out after 9 seconds';
+                resolve({ success: false, error: 'timeout' });
+            });
 
-        req.write(payload);
-        req.end();
-    });
+            req.write(payload);
+            req.end();
+        });
+    };
+
+    let res = await requestModel('gemini-1.5-flash');
+    if (res.success) return res.text;
+
+    // Retry with gemini-2.0-flash if not an auth error
+    if (res.error && res.error.code !== 400) {
+        res = await requestModel('gemini-2.0-flash');
+        if (res.success) return res.text;
+    }
+
+    return null;
 }
 
 // Fallback academic summarizer
@@ -260,9 +287,228 @@ function generateConceptMapFromContent(text, title, subject) {
     };
 }
 
+// Helper to dynamically build comprehensive academic responses for specific topics
+function generateTopicStudyResponse(promptText, userSubject, hadConfiguredKey) {
+    const qLower = promptText.toLowerCase().trim();
+
+    // 1. DBMS & Database Systems
+    if (/\b(dbms|database|sql|rdbms|nosql|normalization|acid|transaction|relational|primary key|foreign key|b-tree|joins?)\b/.test(qLower)) {
+        return `### 🗄️ Database Management Systems (DBMS) — Comprehensive Academic Guide
+
+#### 1. What is DBMS?
+A **Database Management System (DBMS)** is system software that enables users and applications to define, create, maintain, and control access to structured data. It eliminates file-processing disadvantages like data redundancy, data inconsistency, uncoordinated concurrent access, and security isolation.
+
+#### 2. Three-Schema Architecture (ANSI/SPARC)
+* **Physical / Internal Level**: Describes how data is physically stored on disk (block structures, indexes, B-Trees).
+* **Logical / Conceptual Level**: Defines entities, relationships, attributes, and constraints for the entire database.
+* **External / View Level**: Provides tailored, customized views for different user roles.
+
+#### 3. ACID Properties (Transaction Management)
+Transactions must satisfy the ACID guarantee to maintain integrity:
+* **Atomicity**: *"All or Nothing."* If any operation in a transaction fails, the entire transaction is rolled back.
+* **Consistency**: The database transitions from one valid state to another, upholding all schema invariants and constraints.
+* **Isolation**: Concurrent transactions execute without mutual interference. Achieved using lock protocols (2-Phase Locking) or MVCC.
+* **Durability**: Once a transaction is committed, its modifications survive crashes, system reboots, and power failures via Write-Ahead Logging (WAL).
+
+#### 4. Normalization (Data Redundancy Elimination)
+* **1NF (First Normal Form)**: Attributes contain only atomic (indivisible) values; no repeating groups.
+* **2NF (Second Normal Form)**: Must be in 1NF + no *partial dependency* (every non-prime attribute is fully functionally dependent on the candidate key).
+* **3NF (Third Normal Form)**: Must be in 2NF + no *transitive dependency* ($X \\to Y \\to Z$, where non-prime attribute depends on another non-prime attribute).
+* **BCNF (Boyce-Codd Normal Form)**: For every functional dependency $X \\to Y$, $X$ must be a super key.
+
+#### 5. SQL Quick Syntax Reference
+\`\`\`sql
+-- Inner Join with Grouping & Aggregation
+SELECT d.dept_name, COUNT(e.emp_id) AS total_employees, AVG(e.salary) AS avg_salary
+FROM departments d
+INNER JOIN employees e ON d.dept_id = e.dept_id
+WHERE e.status = 'ACTIVE'
+GROUP BY d.dept_name
+HAVING AVG(e.salary) > 50000
+ORDER BY avg_salary DESC;
+\`\`\`
+
+#### 6. High-Yield Exam Points
+* **B-Trees vs B+ Trees**: B+ trees store all data records in leaf nodes connected as a linked list, making range queries significantly faster ($O(\\log n)$ lookup + sequential scan).
+* **Clustered vs Non-Clustered Index**: A table can have only one clustered index (physically sorts rows), but multiple non-clustered indexes.`;
+    }
+
+    // 2. Operating Systems (OS)
+    if (/\b(operating systems?|\bos\b|process(es)?|threads?|deadlocks?|semaphores?|paging|virtual memory|cpu scheduling|concurrency|critical section)\b/.test(qLower)) {
+        return `### ⚙️ Operating Systems (OS) — Academic Concept Breakdown
+
+#### 1. Core Role of Operating Systems
+The OS is an intermediary between bare computer hardware and user software. Its primary duties include **Process Management**, **Memory Management**, **File Systems**, and **I/O Device Virtualization**.
+
+#### 2. Process vs. Thread
+* **Process**: An executing instance of a program with an isolated address space (Text, Data, Heap, Stack). Inter-process communication (IPC) requires pipes, message queues, or shared memory.
+* **Thread**: A lightweight unit of CPU utilization within a process. Threads share the process's code, data, and open files, but possess private Program Counters (PC), registers, and stack frames.
+
+#### 3. CPU Scheduling Algorithms
+* **FCFS (First-Come, First-Served)**: Non-preemptive; susceptible to the *Convoy Effect*.
+* **SJF (Shortest Job First)**: Optimal minimum average waiting time. Preemptive version is **SRTF** (Shortest Remaining Time First).
+* **Round Robin (RR)**: Preemptive scheduling designed for time-sharing systems using fixed time quantums.
+  * Small quantum $\\to$ high context switching overhead.
+  * Large quantum $\\to$ degrades to FCFS.
+
+#### 4. The Critical Section Problem & Semaphores
+A critical section occurs when concurrent threads access shared state.
+* **Mutual Exclusion**: Only one thread can enter at a time.
+* **Progress**: If no thread is in the critical section, selection cannot be postponed indefinitely.
+* **Bounded Waiting**: Bound on how many times other threads can enter before a requesting thread is served.
+* **Semaphores**:
+  * \`wait(S)\` / \`P(S)\`: Decrements counter. Blocks if $S \\le 0$.
+  * \`signal(S)\` / \`V(S)\`: Increments counter and unblocks waiting thread.
+
+#### 5. Deadlock & The 4 Coffman Conditions
+Deadlock occurs when processes are permanently blocked awaiting resources held by one another. All 4 must hold simultaneously:
+1. **Mutual Exclusion**: Non-shareable resource allocation.
+2. **Hold and Wait**: Process holds one resource while waiting for another.
+3. **No Preemption**: Resources cannot be forcibly revoked from a holding process.
+4. **Circular Wait**: A closed chain of processes where each waits for a resource held by the next.
+* **Prevention & Avoidance**: Banker's Algorithm determines if allocating a resource keeps the system in a *Safe State*.
+
+#### 6. Memory Management & Demand Paging
+* **Paging**: Physical memory divided into fixed-size **Frames**; logical memory into **Pages**. Eliminates external fragmentation.
+* **Page Fault**: Trap triggered by MMU when accessing an invalid page table entry. Page is fetched from swap disk.
+* **Page Replacement Policies**: FIFO (suffers from Belady's Anomaly), LRU (Least Recently Used), Optimal (Belady's Min).`;
+    }
+
+    // 3. Computer Networks (CN)
+    if (/\b(computer networks?|\bcn\b|networking|osi\b|tcp|udp|\bip\b|dns|subnetting|routing|http|https|sockets?)\b/.test(qLower)) {
+        return `### 🌐 Computer Networks (CN) — Essential Curriculum Review
+
+#### 1. The OSI 7-Layer Reference Model
+1. **Application Layer**: User network interfaces (HTTP, DNS, SMTP, FTP).
+2. **Presentation Layer**: Data formatting, serialization, encryption (SSL/TLS), and compression.
+3. **Session Layer**: Manages dialogues and synchronization tokens between end-points.
+4. **Transport Layer**: End-to-end communication, reliability, and multiplexing (TCP, UDP). PDU: *Segment*.
+5. **Network Layer**: Logical addressing, subnet routing, packet forwarding (IP, ICMP, OSPF, BGP). PDU: *Packet*.
+6. **Data Link Layer**: Node-to-node framing, MAC addressing, error detection (Ethernet, Wi-Fi). PDU: *Frame*.
+7. **Physical Layer**: Bit transmission over physical transmission medium (cables, radio waves). PDU: *Bits*.
+
+#### 2. TCP vs. UDP Protocol Comparison
+| Parameter | TCP (Transmission Control Protocol) | UDP (User Datagram Protocol) |
+| :--- | :--- | :--- |
+| **Connection** | Connection-Oriented (3-way handshake) | Connectionless (No handshake) |
+| **Reliability** | Guaranteed delivery (ACKs, Retransmissions) | Best-effort (packets can be lost/out of order) |
+| **Flow & Congestion** | Window-based Flow & Congestion Control | None |
+| **Speed / Overhead** | Higher header overhead (20-60 bytes) | Low latency, lightweight (8 bytes header) |
+| **Use Cases** | Web (HTTP), Email (SMTP), File transfer | Video streaming, VoIP, Gaming, DNS queries |
+
+#### 3. TCP 3-Way Handshake
+1. **Client $\\to$ Server**: \`SYN\` (Synchronize sequence number $X$).
+2. **Server $\\to$ Client**: \`SYN-ACK\` (Acknowledge $X+1$, own sequence number $Y$).
+3. **Client $\\to$ Server**: \`ACK\` (Acknowledge $Y+1$). Connection established!
+
+#### 4. Subnetting & CIDR (Classless Inter-Domain Routing)
+* Subnet masks partition 32-bit IPv4 addresses into **Network ID** and **Host ID**.
+* For a \`/24\` subnet ($255.255.255.0$):
+  * Total IP addresses = $2^{(32 - 24)} = 2^8 = 256$.
+  * Usable host addresses = $256 - 2 = 254$ (Network address and Broadcast address reserved).`;
+    }
+
+    // 4. Data Structures & Algorithms (DSA)
+    if (/\b(data structures?|algorithms?|\bdsa\b|binary search|sorting|linked list|stacks?|queues?|trees?|graphs?|dynamic programming|\bdp\b|recursion|hash map|time complexity|big o)\b/.test(qLower)) {
+        return `### ⚡ Data Structures & Algorithms (DSA) — High-Yield Mastery
+
+#### 1. Asymptotic Complexity (Big-O Cheat Sheet)
+* $O(1)$: Constant time (Array index access, Hash map get/put average).
+* $O(\\log n)$: Logarithmic time (Binary Search, Balanced BST lookup).
+* $O(n)$: Linear time (Unsorted array scan, Linked List traversal).
+* $O(n \\log n)$: Linearithmic time (Merge Sort, Heap Sort, Quick Sort average).
+* $O(n^2)$: Quadratic time (Nested loops, Bubble Sort, Insertion Sort).
+
+#### 2. Core Data Structures Comparison
+* **Arrays**: Contiguous memory, $O(1)$ random access, but $O(n)$ insertion/deletion.
+* **Linked Lists**: Dynamic memory nodes, $O(1)$ insertion at known pointer, but $O(n)$ search (no indexing).
+* **Stack**: $LIFO$ (Last In, First Out) — used in recursion call stack, expression evaluation, DFS.
+* **Queue**: $FIFO$ (First In, First Out) — used in CPU scheduling, BFS traversal, buffer caches.
+* **Binary Search Tree (BST)**: Left child $<$ Parent $<$ Right child. Search/Insert average $O(\\log n)$, degrades to $O(n)$ if unbalanced (solved by AVL/Red-Black Trees).
+
+#### 3. Standard Binary Search Algorithm
+\`\`\`javascript
+function binarySearch(arr, target) {
+    let low = 0, high = arr.length - 1;
+    while (low <= high) {
+        const mid = Math.floor(low + (high - low) / 2);
+        if (arr[mid] === target) return mid; // Target found
+        else if (arr[mid] < target) low = mid + 1; // Search right half
+        else high = mid - 1; // Search left half
+    }
+    return -1; // Not found
+}
+\`\`\`
+
+#### 4. Dynamic Programming (DP) Core Methodology
+DP optimizes recursive brute force by storing results of subproblems:
+1. **Identify Optimal Substructure**: Solution to the problem can be constructed from solutions to subproblems.
+2. **Identify Overlapping Subproblems**: Same subproblems solved repeatedly.
+3. **Approach**:
+   * **Memoization (Top-Down)**: Standard recursion with caching dictionary/array.
+   * **Tabulation (Bottom-Up)**: Iterative computation building from base cases up.`;
+    }
+
+    // 5. Object-Oriented Programming (OOP)
+    if (/\b(oop\b|object oriented|inheritance|polymorphism|encapsulation|abstraction|classes|objects|interfaces?|constructors?|solid)\b/.test(qLower)) {
+        return `### 🧩 Object-Oriented Programming (OOP) — Core Pillars & Design
+
+#### 1. The Four Fundamental Pillars of OOP
+1. **Encapsulation**: Bundling state (data attributes) and behavior (methods) together while restricting direct access to object internals using access modifiers (\`private\`, \`protected\`, \`public\`).
+2. **Abstraction**: Exposing clean, high-level interfaces to callers while concealing complex internal mechanisms using abstract classes and interfaces.
+3. **Inheritance**: Mechanism enabling a child class to inherit attributes and methods from a parent class (\`extends\` / \`super\`), promoting code reusability.
+4. **Polymorphism**: Ability for a message or method call to be processed in multiple distinct ways:
+   * **Compile-Time (Static)**: Method Overloading (same method name, different signatures).
+   * **Runtime (Dynamic)**: Method Overriding (subclass provides specific implementation of parent virtual method).
+
+#### 2. The SOLID Architectural Principles
+* **S — Single Responsibility**: A class should have one, and only one, reason to change.
+* **O — Open/Closed**: Software entities should be open for extension, but closed for modification.
+* **L — Liskov Substitution**: Subtypes must be substitutable for their base types without breaking system behavior.
+* **I — Interface Segregation**: Clients should not be forced to depend on interfaces they do not use.
+* **D — Dependency Inversion**: Depend on abstractions, not on concrete implementations.`;
+    }
+
+    // 6. Dynamic Academic Fallback for any other query
+    const stopWords = new Set(['tell', 'me', 'about', 'what', 'is', 'are', 'explain', 'how', 'does', 'do', 'can', 'you', 'give', 'please', 'the', 'a', 'an', 'in', 'on', 'for', 'to', 'of', 'with', 'briefly', 'details']);
+    const meaningfulWords = promptText.replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w.toLowerCase()));
+    const mainTopic = (meaningfulWords.length > 0 ? meaningfulWords.slice(0, 4).join(' ') : promptText).trim() || userSubject;
+    const capitalizedTopic = mainTopic.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    let response = `### 📖 Academic Overview: ${capitalizedTopic}
+
+#### 1. Concept Definition & Scope
+Regarding **"${promptText}"**:
+In ${userSubject || 'Computer Science and Academic Studies'}, **${capitalizedTopic}** encompasses the formal theoretical principles, structural specifications, and practical methodologies used to address core computational challenges.
+
+#### 2. Theoretical Breakdown & Mechanisms
+* **Fundamental Objectives**: Establishes formal invariants, structured data flows, and predictable operational boundaries.
+* **Architectural Organization**: Modular decomposition separating high-level specifications from physical execution layers.
+* **Efficiency & Trade-offs**: Balances computational overhead, resource utilization, and implementation maintainability.
+
+#### 3. Step-by-Step Analytical Walkthrough
+1. **Input / Pre-conditions**: Validate domain bounds and verify structural integrity.
+2. **Operational Transformation**: Apply deterministic state transitions and transformation rules.
+3. **Output / Post-conditions**: Guarantee system invariants and return validated results.
+
+#### 4. High-Yield Exam & Revision Points
+* Always formalize boundary conditions and edge cases in examination answers.
+* Memorize definitions, primary mathematical formulas, and asymptotic complexity bounds.
+* Illustrate answers with clean block diagrams and annotated data-flow sketches.`;
+
+    if (hadConfiguredKey && lastGeminiError) {
+        response += `\n\n---\n*💡 Note: Generated via StudyMate Academic Knowledge Engine. To enable real-time Google Gemini cloud responses, ensure your \`.env\` contains a valid Google AI Studio key (starts with \`AIzaSy...\`) from [Google AI Studio](https://aistudio.google.com/app/apikey).*`;
+    }
+
+    return response;
+}
+
 // Chat-integrated academic assistant and communication drafting
 async function handleChatAssistantPrompt(promptText, mode = 'study_help', userSubject = 'Computer Science') {
-    if (isAiConfigured()) {
+    const rawKey = process.env.GEMINI_API_KEY;
+    const isConfigured = Boolean(rawKey && rawKey.trim().length > 0);
+
+    if (isConfigured) {
         let systemContext = '';
         if (mode === 'draft_intro') {
             systemContext = `You are an academic communication helper for university students. Draft a warm, respectful, and concise study partner introductory message (2-3 sentences) proposing collaboration. The user context is: ${userSubject}.`;
@@ -271,7 +517,7 @@ async function handleChatAssistantPrompt(promptText, mode = 'study_help', userSu
         } else if (mode === 'study_plan') {
             systemContext = `You are an academic coach. Provide a structured, realistic study session plan or topic breakdown for ${userSubject}.`;
         } else {
-            systemContext = `You are StudyMate AI Study Assistant, an expert academic tutor for university students in ${userSubject}. Explain concepts clearly with examples, clarify doubts, explain programming or algorithmic principles concisely.`;
+            systemContext = `You are StudyMate AI Study Assistant, an expert academic tutor for university students in ${userSubject}. Explain concepts clearly with examples, clarify doubts, explain programming or algorithmic principles concisely with clear formatting, markdown tables, and code blocks where applicable.`;
         }
 
         const fullPrompt = `${systemContext}\n\nStudent Query: ${promptText}`;
@@ -284,37 +530,32 @@ async function handleChatAssistantPrompt(promptText, mode = 'study_help', userSu
         }
     }
 
-    // Local high-yield academic response generator
-    let fallbackReply = '';
-    const qLower = promptText.toLowerCase();
-
+    // Dynamic high-yield academic response generator
     if (mode === 'draft_intro') {
-        fallbackReply = `Hi! I noticed we are both taking ${userSubject || 'similar courses'}. Would you be interested in pairing up as study partners to prepare for the upcoming midterms and review problem sets together?`;
-    } else if (mode === 'draft_schedule') {
-        fallbackReply = `Hey! Are you free this Thursday evening around 6:00 PM for an online study session? We could go over the key algorithms and practice solving previous semester questions.`;
-    } else if (mode === 'study_plan') {
-        fallbackReply = `Here is a high-yield 2-hour study session plan for **${userSubject}**:\n\n1. **Phase 1 (30 mins)**: Core Theory & Invariant Definitions review.\n2. **Phase 2 (45 mins)**: Solve 2-3 standard algorithmic numerical problems together.\n3. **Phase 3 (30 mins)**: Cross-quiz each other on edge cases & time complexities.\n4. **Phase 4 (15 mins)**: Summary wrap-up and assign next topic goals.`;
-    } else {
-        // Concept explanation / general academic question
-        fallbackReply = `### 📚 StudyMate Academic Assistance: ${userSubject}
-
-Regarding your query: *"**${promptText}**"*
-
-**1. Core Concept & Principles:**
-This topic centers on foundational correctness invariants and state preservation. Understanding the formal definitions and operational contracts is essential before tackling numerical problem sets.
-
-**2. Key Exam Points to Focus On:**
-- Step-by-step state transitions or algorithmic progression.
-- Asymptotic time and space complexity trade-offs ($O(n \\log n)$ vs $O(n)$ bounds).
-- Edge conditions (empty input, null pointers, bounded buffer limits).
-
-**3. Next Action:**
-Review the corresponding lecture notes in the **Study Library** tab and test your comprehension using the **Quizzes** generator!`;
+        return {
+            response: `Hi! I noticed we are both taking ${userSubject || 'similar courses'}. Would you be interested in pairing up as study partners to prepare for the upcoming midterms and review problem sets together?`,
+            provider: 'StudyMate Academic Engine'
+        };
+    }
+    
+    if (mode === 'draft_schedule') {
+        return {
+            response: `Hey! Are you free this Thursday evening around 6:00 PM for an online study session? We could go over the key algorithms and practice solving previous semester questions.`,
+            provider: 'StudyMate Academic Engine'
+        };
+    }
+    
+    if (mode === 'study_plan') {
+        return {
+            response: `Here is a high-yield 2-hour study session plan for **${userSubject}**:\n\n1. **Phase 1 (30 mins)**: Core Theory & Invariant Definitions review.\n2. **Phase 2 (45 mins)**: Solve 2-3 standard algorithmic numerical problems together.\n3. **Phase 3 (30 mins)**: Cross-quiz each other on edge cases & time complexities.\n4. **Phase 4 (15 mins)**: Summary wrap-up and assign next topic goals.`,
+            provider: 'StudyMate Academic Engine'
+        };
     }
 
+    const dynamicReply = generateTopicStudyResponse(promptText, userSubject, isConfigured);
     return {
-        response: fallbackReply,
-        provider: 'StudyMate Academic Engine (Local)'
+        response: dynamicReply,
+        provider: 'StudyMate Academic Engine'
     };
 }
 

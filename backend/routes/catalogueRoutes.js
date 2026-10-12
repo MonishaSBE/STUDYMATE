@@ -60,8 +60,8 @@ router.get('/courses', auth, async (req, res) => {
     }
 });
 
-// 3. Admin: Add New Course to Catalogue
-router.post('/courses', auth, adminOnly, async (req, res) => {
+// 3. Add New Course to Catalogue (Dynamic Course Addition)
+router.post('/courses', auth, async (req, res) => {
     try {
         const { course_name, course_code, domain, department_name, semester = 1, academic_level = 'Undergraduate', description } = req.body;
         if (!course_name || !course_code) {

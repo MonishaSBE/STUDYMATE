@@ -419,25 +419,56 @@ window.ChatModule = {
     async acceptRequest(reqId) {
         try {
             const res = await api(`/chat/requests/${reqId}/accept`, { method: 'POST' });
-            alert(res.message || 'Request accepted!');
+            if (window.showDashToast) {
+                window.showDashToast('✅ ' + (res.message || 'Request accepted! Conversation unlocked.'), 'success');
+            }
             await this.loadIncomingRequests();
             await this.loadConversations();
+            if (typeof loadRequests === 'function') loadRequests();
+            if (typeof loadMatches === 'function') loadMatches();
             if (res.conversation_id) {
                 this.switchSubTab('conversations');
                 this.openConversation(res.conversation_id);
             }
         } catch (err) {
-            alert('Could not accept request: ' + err.message);
+            if (window.showDashToast) {
+                window.showDashToast('Could not accept request: ' + err.message, 'error');
+            } else {
+                alert('Could not accept request: ' + err.message);
+            }
         }
     },
 
     async rejectRequest(reqId) {
-        if (!confirm('Are you sure you want to decline this study request?')) return;
-        try {
-            await api(`/chat/requests/${reqId}/reject`, { method: 'POST' });
-            await this.loadIncomingRequests();
-        } catch (err) {
-            alert('Could not decline request: ' + err.message);
+        const doReject = async () => {
+            try {
+                await api(`/chat/requests/${reqId}/reject`, { method: 'POST' });
+                if (window.showDashToast) {
+                    window.showDashToast('Request declined.', 'info');
+                }
+                await this.loadIncomingRequests();
+                if (typeof loadRequests === 'function') loadRequests();
+            } catch (err) {
+                if (window.showDashToast) {
+                    window.showDashToast('Could not decline request: ' + err.message, 'error');
+                } else {
+                    alert('Could not decline request: ' + err.message);
+                }
+            }
+        };
+
+        if (window.showDashModal) {
+            window.showDashModal({
+                title: 'Decline Study Request',
+                body: 'Are you sure you want to decline this study partner request?',
+                confirmLabel: 'Decline',
+                cancelLabel: 'Cancel',
+                onConfirm: doReject
+            });
+        } else {
+            if (confirm('Are you sure you want to decline this study request?')) {
+                doReject();
+            }
         }
     },
 

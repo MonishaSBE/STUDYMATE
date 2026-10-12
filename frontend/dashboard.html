@@ -4,16 +4,50 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>StudyMate — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand"><span class="pin"></span> StudyMate</div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div class="brand" onclick="switchMainTab('profile')" style="cursor:pointer;">
+      <i class="fa-solid fa-graduation-cap" style="color:var(--highlight); margin-right:8px; font-size:20px;"></i>
+      <span>StudyMate</span>
+    </div>
+    <div class="db-status-pill" title="MongoDB Atlas Cluster: Connected & Synchronized">
+      <div class="pulse-dot"></div>
+      <span>MongoDB Atlas Active</span>
+    </div>
+  </div>
+
   <div style="display:flex; align-items:center; gap:12px;">
+    <!-- Notification Bell Button & Popover -->
+    <div style="position:relative;">
+      <button class="notif-topbar-btn" id="notifBellBtn" onclick="toggleNotifDropdown()" title="Notifications & Study Requests">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-badge-count" id="topNotifBadge" style="display:none;">0</span>
+      </button>
+      <div class="notif-dropdown" id="notifDropdown" style="display:none;">
+        <div class="notif-header">
+          <h4><i class="fa-solid fa-bell"></i> Notifications</h4>
+          <span class="notif-clear-btn" onclick="clearAllNotifs()">Clear All</span>
+        </div>
+        <div class="notif-list" id="notifDropdownList">
+          <div class="notif-item empty">Loading notifications...</div>
+        </div>
+        <div class="notif-footer" onclick="switchMainTab('requests'); toggleNotifDropdown();">
+          <span>View All Requests & Chats →</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Theme Selector Button -->
     <button class="theme-toggle-btn" onclick="StudyMateTheme.openThemeModal()" title="Customize StudyMate Theme (Dark, Midnight, Sepia, etc.)">
-      <span>🎨</span> <span class="theme-current-name">Theme</span>
+      <i class="fa-solid fa-palette"></i> <span class="theme-current-name">Theme</span>
     </button>
     <!-- Zoom Controls -->
     <div class="zoom-controls" title="Adjust application view scale (or use Ctrl + / Ctrl -)">
@@ -21,40 +55,151 @@
       <span class="zoom-level-label" onclick="StudyMateZoom.resetZoom()" title="Reset to default 100% scale">100%</span>
       <button class="zoom-btn" onclick="StudyMateZoom.zoomIn()" title="Zoom In (Ctrl +)">+</button>
     </div>
-    <div class="user-chip" id="userChip" onclick="logout()">…</div>
+    <div class="user-chip" id="userChip" onclick="logout()" title="Click to Sign Out">…</div>
   </div>
 </div>
 
 <div class="shell">
-  <div class="tabs">
-    <button class="tab active" data-tab="profile">Profile</button>
-    <button class="tab" data-tab="find">Find Partner</button>
-    <button class="tab" data-tab="requests">Chat Requests</button>
-    <button class="tab" data-tab="groups">Study Groups</button>
-    <button class="tab" data-tab="notes">Shared Notes</button>
-    <button class="tab" data-tab="upload">Upload Notes</button>
-    <button class="tab" data-tab="catalogue">Course Discovery</button>
-    <button class="tab" data-tab="library">Study Library</button>
-    <button class="tab" data-tab="goals">Daily Goals</button>
-    <button class="tab" data-tab="quizzes">Quizzes</button>
-    <button class="tab" data-tab="flashcards">Flashcards</button>
-    <button class="tab" data-tab="conceptmaps">Concept Maps</button>
-    <button class="tab" data-tab="community">Community Q&A</button>
-  </div>
+
+  <!-- ===== LEFT SIDEBAR NAVIGATION ===== -->
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="sidebar-section-label">📌 Main</div>
+    <button class="tab active" data-tab="home"><i class="fa-solid fa-house"></i> Home</button>
+    <button class="tab" data-tab="profile"><i class="fa-solid fa-id-badge"></i> Profile</button>
+    <button class="tab" data-tab="find"><i class="fa-solid fa-users-viewfinder"></i> Find Partner</button>
+    <button class="tab" data-tab="requests"><i class="fa-solid fa-comments"></i> Chat Requests</button>
+    <button class="tab" data-tab="groups"><i class="fa-solid fa-user-group"></i> Study Groups</button>
+
+    <div class="sidebar-section-label">📚 Notes</div>
+    <button class="tab" data-tab="notes"><i class="fa-solid fa-file-lines"></i> Shared Notes</button>
+    <button class="tab" data-tab="upload"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Notes</button>
+
+    <div class="sidebar-section-label">🎓 Learn</div>
+    <button class="tab" data-tab="catalogue"><i class="fa-solid fa-compass"></i> Course Discovery</button>
+    <button class="tab" data-tab="library"><i class="fa-solid fa-book-bookmark"></i> Study Library</button>
+    <button class="tab" data-tab="goals"><i class="fa-solid fa-bullseye"></i> Daily Goals</button>
+    <button class="tab" data-tab="quizzes"><i class="fa-solid fa-circle-question"></i> Quizzes</button>
+    <button class="tab" data-tab="flashcards"><i class="fa-solid fa-clone"></i> Flashcards</button>
+    <button class="tab" data-tab="conceptmaps"><i class="fa-solid fa-diagram-project"></i> Concept Maps</button>
+
+    <div class="sidebar-section-label">💬 Community</div>
+    <button class="tab" data-tab="community"><i class="fa-solid fa-messages"></i> Community Q&A</button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT AREA ===== -->
+  <div class="main-content">
+
+    <!-- Real-Time Stats Overview -->
+    <div class="stats-overview-grid">
+      <div class="stat-overview-card" onclick="switchMainTab('find')">
+        <div class="stat-icon-wrapper" style="background: rgba(37, 99, 235, 0.15); color: #38bdf8;">
+          <i class="fa-solid fa-user-group"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Study Partners</span>
+          <span class="stat-val" id="statPartnersCount">Discover</span>
+        </div>
+      </div>
+
+      <div class="stat-overview-card" onclick="switchMainTab('groups')">
+        <div class="stat-icon-wrapper" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Study Groups</span>
+          <span class="stat-val" id="statGroupsCount">Active Pods</span>
+        </div>
+      </div>
+
+      <div class="stat-overview-card" onclick="switchMainTab('goals')">
+        <div class="stat-icon-wrapper" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+          <i class="fa-solid fa-bullseye"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Daily Goals</span>
+          <span class="stat-val" id="statGoalsCount">Track Progress</span>
+        </div>
+      </div>
+
+      <div class="stat-overview-card" onclick="switchMainTab('library')">
+        <div class="stat-icon-wrapper" style="background: rgba(139, 92, 246, 0.15); color: #c084fc;">
+          <i class="fa-solid fa-book-open"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Study Library</span>
+          <span class="stat-val" id="statLibraryCount">Open Vault</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== HOME PANEL (shown on login) ===== -->
+    <section class="panel active" id="panel-home">
+      <!-- Welcome Banner -->
+      <div class="home-welcome-banner">
+        <div>
+          <h2>👋 Welcome back, <span id="homeUserName">Student</span>!</h2>
+          <p id="homeSubtitle">Here's what's happening in your campus study network today.</p>
+        </div>
+        <div style="text-align:right; flex-shrink:0;">
+          <div style="font-family:var(--font-mono); font-size:11px; color:rgba(238,241,234,0.5);" id="homeDateLabel"></div>
+          <div style="font-size:22px; margin-top:4px;">🎓</div>
+        </div>
+      </div>
+
+      <!-- Daily Aptitude Challenge -->
+      <div class="daily-challenge-card" id="dailyChallengeCard">
+        <div class="challenge-badge"><i class="fa-solid fa-bolt"></i> Daily Challenge</div>
+        <div class="challenge-question" id="challengeQuestion">Loading today's aptitude question...</div>
+        <div class="challenge-options" id="challengeOptions"></div>
+        <div class="challenge-result" id="challengeResult"></div>
+        <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+          <button class="btn small teal" id="nextChallengeBtn" onclick="loadDailyChallenge()" style="display:none;">
+            <i class="fa-solid fa-rotate-right"></i> Next Question
+          </button>
+          <button class="btn small secondary" onclick="switchMainTab('quizzes')">
+            <i class="fa-solid fa-circle-question"></i> Open Full Quiz
+          </button>
+        </div>
+      </div>
+
+      <!-- Your Connections -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div>
+          <span class="eyebrow">// your network</span>
+          <h3 style="margin:0;">Your Study Connections</h3>
+        </div>
+        <button class="btn small teal" onclick="switchMainTab('find')">
+          <i class="fa-solid fa-plus"></i> Find More
+        </button>
+      </div>
+      <div class="connections-grid" id="homeConnectionsGrid">
+        <div class="empty-state" style="grid-column:1/-1;">Loading your connections...</div>
+      </div>
+    </section>
 
   <!-- PROFILE -->
-  <section class="panel active" id="panel-profile">
-    <span class="eyebrow">// step 1</span>
-    <h2>Your profile</h2>
+  <section class="panel" id="panel-profile">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div>
+        <span class="eyebrow">// student identity</span>
+        <h2>Your Academic Profile</h2>
+        <p style="color:var(--ink-soft); margin-top:-4px; font-size:13px;">Update your info so peers can discover and match with you.</p>
+      </div>
+    </div>
+
     <div class="card">
       <form id="profileForm">
+        <div style="margin-bottom:14px;">
+          <label>Full Student Name</label>
+          <input type="text" id="p_name" placeholder="e.g. Swetha Monica" required />
+        </div>
         <div class="grid-2">
           <div>
-            <label>Department</label>
+            <label>Department / Major</label>
             <input type="text" id="p_department" placeholder="e.g. Computer Science" required />
           </div>
           <div>
-            <label>Year</label>
+            <label>Year of Study</label>
             <select id="p_year" required>
               <option value="">Select year</option>
               <option>1st Year</option><option>2nd Year</option>
@@ -62,14 +207,39 @@
             </select>
           </div>
         </div>
-        <label>Subjects (comma separated)</label>
-        <input type="text" id="p_subjects" placeholder="Data Structures, Algorithms, DBMS" />
-        <label>Available study time</label>
-        <input type="text" id="p_time" placeholder="e.g. 6–8 PM Weekdays" />
-        <label>Short bio</label>
-        <textarea id="p_bio" placeholder="What are you studying towards? What kind of study partner works for you?"></textarea>
-        <div style="margin-top:18px;">
-          <button type="submit" class="btn">Save profile</button>
+        <label>Key Subjects (Comma Separated)</label>
+        <input type="text" id="p_subjects" placeholder="Data Structures, Algorithms, DBMS, Cyber Security" />
+        <label>Available Study Hours</label>
+        <input type="text" id="p_time" placeholder="e.g. Evenings (6–9 PM Weekdays)" />
+
+        <!-- Weekly Active Study Days (Which days the student is active) -->
+        <label style="margin-top:14px;">Weekly Active Study Days (Select days you are available to study)</label>
+        <div class="active-days-picker" id="profileActiveDaysPicker">
+          <button type="button" class="day-pill selected" data-day="Mon" onclick="toggleActiveDay(this)">Mon</button>
+          <button type="button" class="day-pill" data-day="Tue" onclick="toggleActiveDay(this)">Tue</button>
+          <button type="button" class="day-pill selected" data-day="Wed" onclick="toggleActiveDay(this)">Wed</button>
+          <button type="button" class="day-pill" data-day="Thu" onclick="toggleActiveDay(this)">Thu</button>
+          <button type="button" class="day-pill selected" data-day="Fri" onclick="toggleActiveDay(this)">Fri</button>
+          <button type="button" class="day-pill selected" data-day="Sat" onclick="toggleActiveDay(this)">Sat</button>
+          <button type="button" class="day-pill" data-day="Sun" onclick="toggleActiveDay(this)">Sun</button>
+        </div>
+
+        <div class="activity-status-card" id="profileActivityStatusCard">
+          <div class="activity-status-item">
+            <span class="pulse-dot"></span>
+            <span><strong>Status:</strong> <span id="profileActiveDaysSummary">Active 4 days/week (Mon, Wed, Fri, Sat)</span></span>
+          </div>
+          <div class="activity-status-item">
+            <i class="fa-solid fa-fire" style="color:var(--pin-red);"></i>
+            <span><strong>Study Routine:</strong> Active Routine on MongoDB</span>
+          </div>
+        </div>
+
+        <label>Academic Bio & Study Goals</label>
+        <textarea id="p_bio" rows="3" placeholder="What courses are you focusing on? What kind of study partner are you looking for?"></textarea>
+        <div style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+          <button type="submit" class="btn"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button>
+          <span id="profileSaveFeedback" style="font-size:12px; color:#10b981; display:none;"><i class="fa-solid fa-check"></i> Profile saved dynamically to MongoDB!</span>
         </div>
       </form>
     </div>
@@ -90,49 +260,103 @@
       </div>
     </div>
 
-    <!-- Discovery Navigation Tabs (Instagram / LinkedIn People Recommendation Style) -->
-    <div class="discovery-nav-tabs">
-      <button class="d-tab active" data-tab="for_you" onclick="switchPartnerTab('for_you')">✨ For You</button>
-      <button class="d-tab" data-tab="department" onclick="switchPartnerTab('department')">🏛️ Same Department</button>
-      <button class="d-tab" data-tab="subjects" onclick="switchPartnerTab('subjects')">📚 Shared Subjects</button>
-      <button class="d-tab" data-tab="year" onclick="switchPartnerTab('year')">🎓 Same Year</button>
-      <button class="d-tab" data-tab="new" onclick="switchPartnerTab('new')">🌱 New Students</button>
+    <!-- PENDING PARTNER REQUESTS NOTICE (ADDRESSING WHO REQUESTED THE USER) -->
+    <div id="partnerPendingRequestsBox" class="pending-requests-notice" style="display:none;">
+      <h3><i class="fa-solid fa-inbox"></i> Incoming Partner Requests (Who Wants to Study with You)</h3>
+      <p style="font-size:12px; color:var(--ink-soft); margin:0 0 8px;">These classmates have sent you a study partner request:</p>
+      <div id="partnerPendingRequestsList"></div>
     </div>
 
-    <!-- Search, Filter & Sort Controls Card -->
-    <div class="card partner-filter-card" style="margin-bottom:20px;">
-      <div class="grid-3">
-        <div>
-          <label>Search Students</label>
-          <input type="text" id="partnerSearchInput" placeholder="Search by name, subject, or bio..." oninput="debouncePartnerSearch()" />
+    <!-- 2-COLUMN SPLIT LAYOUT: Left Partners, Right Suggestions -->
+    <div class="partner-split-layout">
+      <!-- Left Column: Discovery Controls & Partner Cards -->
+      <div class="partner-col-left">
+        <!-- Discovery Navigation Tabs -->
+        <div class="discovery-nav-tabs">
+          <button class="d-tab active" data-tab="for_you" onclick="switchPartnerTab('for_you')">✨ For You</button>
+          <button class="d-tab" data-tab="department" onclick="switchPartnerTab('department')">🏛️ Same Department</button>
+          <button class="d-tab" data-tab="subjects" onclick="switchPartnerTab('subjects')">📚 Shared Subjects</button>
+          <button class="d-tab" data-tab="year" onclick="switchPartnerTab('year')">🎓 Same Year</button>
+          <button class="d-tab" data-tab="new" onclick="switchPartnerTab('new')">🌱 New Students</button>
         </div>
-        <div>
-          <label>Department Filter</label>
-          <select id="partnerDeptFilter" onchange="applyPartnerFilters()">
-            <option value="">All Departments</option>
-            <option value="Computer Science">Computer Science</option>
-            <option value="Cyber Security">Cyber Security</option>
-            <option value="Information Technology">Information Technology</option>
-            <option value="Electronics">Electronics</option>
-          </select>
+
+        <!-- Search, Filter & Sort Controls Card -->
+        <div class="card partner-filter-card" style="margin-bottom:16px;">
+          <div class="grid-3">
+            <div>
+              <label>Search Students</label>
+              <input type="text" id="partnerSearchInput" placeholder="Search by name, subject, or bio..." oninput="debouncePartnerSearch()" />
+            </div>
+            <div>
+              <label>Department Filter</label>
+              <select id="partnerDeptFilter" onchange="applyPartnerFilters()">
+                <option value="">All Departments</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Cyber Security">Cyber Security</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Electronics">Electronics</option>
+              </select>
+            </div>
+            <div>
+              <label>Sort By</label>
+              <select id="partnerSortSelect" onchange="applyPartnerFilters()">
+                <option value="best_match">Highest Compatibility</option>
+                <option value="most_subjects">Most Shared Subjects</option>
+                <option value="recent">Recently Joined</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:12px; color:var(--ink-soft);">
+            <span id="partnerResultCount">Showing recommended classmates</span>
+            <button class="btn-link" onclick="resetPartnerFilters()" style="background:none; border:none; color:var(--pin-teal); cursor:pointer; font-size:12px; font-family:var(--font-mono);">↺ Reset Filters</button>
+          </div>
         </div>
-        <div>
-          <label>Sort By</label>
-          <select id="partnerSortSelect" onchange="applyPartnerFilters()">
-            <option value="best_match">Highest Compatibility</option>
-            <option value="most_subjects">Most Shared Subjects</option>
-            <option value="recent">Recently Joined</option>
-          </select>
-        </div>
+
+        <!-- Partner Cards Grid -->
+        <div id="matchList" class="partner-card-grid"></div>
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:12px; color:var(--ink-soft);">
-        <span id="partnerResultCount">Showing recommended classmates</span>
-        <button class="btn-link" onclick="resetPartnerFilters()" style="background:none; border:none; color:var(--pin-teal); cursor:pointer; font-size:12px; font-family:var(--font-mono);">↺ Reset Filters</button>
+
+      <!-- Right Column: Newly Added Content & Suggestions -->
+      <div class="partner-col-right">
+        <!-- 1. Newly Added Academic Notes -->
+        <div class="card suggestion-card">
+          <span class="eyebrow">// newly added notes</span>
+          <h3>📖 Fresh Study Notes</h3>
+          <p style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">Recently shared notes & cheat sheets:</p>
+          <div id="newlyAddedNotesList" class="mini-suggestions-list">
+            <div class="mini-suggestion-item" style="color:var(--ink-soft); font-size:12px; font-style:italic;">
+              No notes uploaded yet. Notes shared by students will appear here.
+            </div>
+          </div>
+          <button class="btn small" style="width:100%; margin-top:12px;" onclick="switchMainTab('notes')">Explore All Notes →</button>
+        </div>
+
+        <!-- 2. Newly Formed Study Groups -->
+        <div class="card suggestion-card">
+          <span class="eyebrow">// campus study pods</span>
+          <h3>👥 Active Study Groups</h3>
+          <p style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">Collaborative problem-solving pods:</p>
+          <div id="newlyAddedGroupsList" class="mini-suggestions-list">
+            <div class="mini-suggestion-item" style="color:var(--ink-soft); font-size:12px; font-style:italic;">
+              No active study pods yet. Create a group to collaborate with peers.
+            </div>
+          </div>
+          <button class="btn small secondary" style="width:100%; margin-top:12px;" onclick="switchMainTab('groups')">Join Study Groups →</button>
+        </div>
+
+        <!-- 3. Campus Community Doubts -->
+        <div class="card suggestion-card">
+          <span class="eyebrow">// recent questions</span>
+          <h3>💡 Community Doubts</h3>
+          <div id="newlyAddedQuestionsList" class="mini-suggestions-list">
+            <div class="mini-suggestion-item" style="color:var(--ink-soft); font-size:12px; font-style:italic;">
+              No community questions yet. Post a doubt in Community Q&A.
+            </div>
+          </div>
+          <button class="btn small teal" style="width:100%; margin-top:12px;" onclick="switchMainTab('community')">Ask or Answer Doubt →</button>
+        </div>
       </div>
     </div>
-
-    <!-- Partner Cards Grid -->
-    <div id="matchList" class="partner-card-grid"></div>
   </section>
 
   <!-- CHAT & STUDY MESSAGING DASHBOARD -->
@@ -143,6 +367,9 @@
         <h2>StudyMate Chat & Partner Hub</h2>
       </div>
       <div style="display:flex; gap:8px;">
+        <button class="btn small teal" onclick="openNewPartnerRequestModal()" title="Send study partner request to a classmate">
+          <i class="fa-solid fa-paper-plane"></i> Send Request
+        </button>
         <button class="btn small secondary" onclick="ChatModule.refreshAll()" title="Refresh conversations and requests">
           🔄 Refresh Chat
         </button>
@@ -238,11 +465,16 @@
 
       <!-- VIEW 3: OUTGOING REQUESTS -->
       <div id="chatViewOutgoing" class="chat-main-view" style="display:none;">
-        <div class="card" style="margin-bottom:14px; background:#fafbf9;">
-          <h3 style="font-size:15px; margin-bottom:4px;">Sent Study Partner Requests</h3>
-          <p style="font-size:12px; color:var(--ink-soft); margin:0;">
-            Requests you have sent to classmates. Once accepted, conversations automatically unlock in your Chats tab.
-          </p>
+        <div class="card" style="margin-bottom:14px; background:#fafbf9; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="font-size:15px; margin-bottom:4px;">Sent Study Partner Requests</h3>
+            <p style="font-size:12px; color:var(--ink-soft); margin:0;">
+              Requests you have sent to classmates. Once accepted, conversations automatically unlock in your Chats tab.
+            </p>
+          </div>
+          <button class="btn small teal" onclick="openNewPartnerRequestModal()">
+            <i class="fa-solid fa-paper-plane"></i> + Send Request
+          </button>
         </div>
         <div id="outgoingRequestsContainer" class="card-grid"></div>
       </div>
@@ -319,20 +551,30 @@
 
   <!-- GROUPS -->
   <section class="panel" id="panel-groups">
-    <span class="eyebrow">// collaborate</span>
-    <h2>Study groups</h2>
-    <div class="card" style="margin-bottom:20px;">
-      <form id="groupForm">
-        <label>Group name</label>
-        <input type="text" id="g_name" required placeholder="e.g. DBMS Finals Squad" />
-        <label>Subject</label>
-        <input type="text" id="g_subject" placeholder="e.g. DBMS" />
-        <label>Description</label>
-        <textarea id="g_desc" placeholder="What will this group focus on?"></textarea>
-        <label>Max members</label>
-        <input type="number" id="g_max" value="6" min="2" max="30" />
-        <div style="margin-top:18px;"><button type="submit" class="btn">Create group</button></div>
-      </form>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div>
+        <span class="eyebrow">// collaborate</span>
+        <h2>Study Groups</h2>
+        <p style="color:var(--ink-soft); margin-top:-4px; font-size:13px;">Join or create collaborative study pods with classmates.</p>
+      </div>
+      <button class="btn small teal" onclick="document.getElementById('createGroupForm').style.display = document.getElementById('createGroupForm').style.display === 'none' ? 'block' : 'none'">
+        <i class="fa-solid fa-plus"></i> Create Group
+      </button>
+    </div>
+    <div id="createGroupForm" style="display:none;">
+      <div class="card" style="margin-bottom:20px;">
+        <form id="groupForm">
+          <label>Group name</label>
+          <input type="text" id="g_name" required placeholder="e.g. DBMS Finals Squad" />
+          <label>Subject</label>
+          <input type="text" id="g_subject" placeholder="e.g. DBMS" />
+          <label>Description</label>
+          <textarea id="g_desc" placeholder="What will this group focus on?"></textarea>
+          <label>Max members</label>
+          <input type="number" id="g_max" value="6" min="2" max="30" />
+          <div style="margin-top:18px;"><button type="submit" class="btn">Create group</button></div>
+        </form>
+      </div>
     </div>
     <div id="groupList" class="card-grid"></div>
   </section>
@@ -365,7 +607,13 @@
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+      <button class="btn small teal" onclick="const f = document.getElementById('quickShareNoteBox'); f.style.display = f.style.display === 'none' ? 'block' : 'none'">
+        <i class="fa-solid fa-plus"></i> Share Note
+      </button>
+    </div>
+    <div id="quickShareNoteBox" style="display:none; margin-bottom:16px;">
+      <div class="card">
       <h3 style="font-size:15px; margin-bottom:10px;">Share a Quick Note Link to Study Group</h3>
       <form id="noteForm">
         <div class="grid-2">
@@ -383,23 +631,41 @@
         <div style="margin-top:14px;"><button type="submit" class="btn">Share to Group</button></div>
       </form>
     </div>
+    </div>
 
     <div id="sharedNotesList" class="card-grid"></div>
   </section>
 
   <!-- GOALS -->
   <section class="panel" id="panel-goals">
-    <span class="eyebrow">// daily focus</span>
-    <h2>Daily study goals</h2>
-    <div class="card" style="margin-bottom:20px;">
-      <form id="goalForm">
-        <label>Goal</label>
-        <input type="text" id="goal_text" required placeholder="e.g. Finish 20 DSA problems" />
-        <label>Target date</label>
-        <label>Reminder Alert (Date & Time)</label>
-        <input type="datetime-local" id="goal_reminder" />
-        <div style="margin-top:18px;"><button type="submit" class="btn">Add goal</button></div>
-      </form>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div>
+        <span class="eyebrow">// daily focus</span>
+        <h2>Daily Study Goals</h2>
+        <p style="color:var(--ink-soft); margin-top:-4px; font-size:13px;">Track your study progress, target tasks, and consecutive study streaks.</p>
+      </div>
+      <button class="btn small teal" onclick="const f = document.getElementById('createGoalFormBox'); f.style.display = f.style.display === 'none' ? 'block' : 'none'">
+        <i class="fa-solid fa-plus"></i> Add Goal
+      </button>
+    </div>
+    <div id="createGoalFormBox" style="display:none; margin-bottom:20px;">
+      <div class="card">
+        <form id="goalForm">
+          <label>Academic Goal / Task</label>
+          <input type="text" id="goal_text" required placeholder="e.g. Finish Unit 3 Trees & Graphs questions" />
+          <div class="grid-2" style="margin-top:10px;">
+            <div>
+              <label>Target Date</label>
+              <input type="date" id="goal_date" />
+            </div>
+            <div>
+              <label>Reminder Alert (Date & Time)</label>
+              <input type="datetime-local" id="goal_reminder" />
+            </div>
+          </div>
+          <div style="margin-top:16px;"><button type="submit" class="btn"><i class="fa-solid fa-plus"></i> Save Goal</button></div>
+        </form>
+      </div>
     </div>
     <div id="goalReminderAlert" style="display:none; margin-bottom:14px; padding:12px 16px; background:#fff3cd; border-left:4px solid #ffc107; border-radius:6px; color:#856404; font-size:13px; font-weight:500;"></div>
     <div id="goalList"></div>
@@ -407,9 +673,55 @@
 
   <!-- COURSE DISCOVERY -->
   <section class="panel" id="panel-catalogue">
-    <span class="eyebrow">// academic catalogue</span>
-    <h2>Multi-Domain Course Discovery</h2>
-    <p style="color:var(--ink-soft); margin-top:-6px;">Explore courses, syllabus modules, and verified study resources across engineering, science, computing, and management domains.</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div>
+        <span class="eyebrow">// academic catalogue</span>
+        <h2>Multi-Domain Course Discovery</h2>
+        <p style="color:var(--ink-soft); margin-top:-4px; font-size:13px;">Explore courses, syllabus modules, and study resources across engineering, science, and computing.</p>
+      </div>
+      <button class="btn small teal" onclick="const f = document.getElementById('createCourseFormBox'); f.style.display = f.style.display === 'none' ? 'block' : 'none'">
+        <i class="fa-solid fa-plus"></i> Add Course
+      </button>
+    </div>
+    <div id="createCourseFormBox" style="display:none; margin-bottom:20px;">
+      <div class="card">
+        <form id="createCourseForm" onsubmit="submitNewCourse(event)">
+          <div class="grid-2">
+            <div>
+              <label>Course Name</label>
+              <input type="text" id="cc_name" required placeholder="e.g. Advanced Operating Systems" />
+            </div>
+            <div>
+              <label>Course Code</label>
+              <input type="text" id="cc_code" required placeholder="e.g. CS4401" />
+            </div>
+          </div>
+          <div class="grid-2" style="margin-top:10px;">
+            <div>
+              <label>Academic Domain</label>
+              <select id="cc_domain">
+                <option value="Computer Science and Engineering">Computer Science</option>
+                <option value="Cyber Security">Cyber Security</option>
+                <option value="Artificial Intelligence and Machine Learning">AI & ML</option>
+                <option value="Information Technology">Information Tech</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Electronics and Communication Engineering">Electronics (ECE)</option>
+                <option value="Mathematics">Mathematics</option>
+              </select>
+            </div>
+            <div>
+              <label>Semester (1-8)</label>
+              <input type="number" id="cc_semester" value="3" min="1" max="8" />
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <label>Course Description / Syllabus Overview</label>
+            <textarea id="cc_desc" rows="2" placeholder="Topics, prerequisites, and learning outcomes..."></textarea>
+          </div>
+          <div style="margin-top:14px;"><button type="submit" class="btn"><i class="fa-solid fa-plus"></i> Save Course</button></div>
+        </form>
+      </div>
+    </div>
 
     <div class="card" style="margin-bottom:20px;">
       <div class="grid-3">
@@ -499,29 +811,28 @@
             <label>Subject / Course Name</label>
             <input type="text" id="up_subject_name" name="subject_name" required placeholder="e.g. Data Structures and Algorithms" />
           </div>
-        <div class="grid-2">
-          <div>
-            <label>Academic Domain</label>
-            <select id="up_domain_select" name="domain">
-              <option value="Computer Science and Engineering">Computer Science and Engineering</option>
-              <option value="Cybersecurity">Cybersecurity</option>
-              <option value="Artificial Intelligence and Machine Learning">Artificial Intelligence and Machine Learning</option>
-              <option value="Data Science">Data Science</option>
-              <option value="Information Technology">Information Technology</option>
-              <option value="Electronics and Communication Engineering">Electronics and Communication Engineering</option>
-              <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
-              <option value="Mechanical Engineering">Mechanical Engineering</option>
-              <option value="Civil Engineering">Civil Engineering</option>
-              <option value="Business and Management">Business and Management</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
-            </select>
-          </div>
           <div>
             <label>Course Catalogue Link (Optional)</label>
             <select id="up_course_id" name="course_id"></select>
           </div>
+        </div>
+        <div style="margin-top:10px;">
+          <label>Academic Domain</label>
+          <select id="up_domain_select" name="domain">
+            <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+            <option value="Cybersecurity">Cybersecurity</option>
+            <option value="Artificial Intelligence and Machine Learning">Artificial Intelligence and Machine Learning</option>
+            <option value="Data Science">Data Science</option>
+            <option value="Information Technology">Information Technology</option>
+            <option value="Electronics and Communication Engineering">Electronics and Communication Engineering</option>
+            <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
+            <option value="Mechanical Engineering">Mechanical Engineering</option>
+            <option value="Civil Engineering">Civil Engineering</option>
+            <option value="Business and Management">Business and Management</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Physics">Physics</option>
+            <option value="Chemistry">Chemistry</option>
+          </select>
         </div>
 
         <div class="grid-2">
@@ -807,6 +1118,7 @@
         <button class="btn small danger" id="modal_report_btn">Report Issue</button>
       </div>
     </div>
+  </div>
   <!-- STUDENT PROFILE MODAL -->
   <div id="studentProfileModal" class="modal-overlay" style="display:none;">
     <div class="modal-card" style="max-width:540px;">
@@ -851,7 +1163,42 @@
   </div>
 
   <footer class="hint">StudyMate · Academic Student Platform</footer>
+  </div><!-- /.main-content -->
+</div><!-- /.shell -->
+
+<!-- Floating AI Assistant Logo in the Right Corner -->
+<button class="floating-ai-corner-widget" id="floatingAiCornerBtn" onclick="toggleCornerAiDrawer()" title="StudyMate AI Study Assistant">
+  <div class="ai-logo-icon">
+    <i class="fa-solid fa-robot"></i>
+  </div>
+  <span>StudyMate AI</span>
+</button>
+
+<!-- Interactive Corner AI Study Assistant Drawer -->
+<div class="corner-ai-modal" id="cornerAiModal" style="display:none;">
+  <div class="corner-ai-header">
+    <h4><i class="fa-solid fa-robot" style="color:var(--highlight);"></i> StudyMate AI Assistant</h4>
+    <button style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;" onclick="toggleCornerAiDrawer()">×</button>
+  </div>
+  <div class="corner-ai-body">
+    <p style="font-size:12.5px; color:var(--ink-soft); margin-top:0;">
+      Hello! How can I assist your study session?
+    </p>
+    <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+      <button class="btn small secondary" style="text-align:left; font-size:11.5px;" onclick="quickCornerAi('Explain difference between TCP and UDP with exam points')">💡 TCP vs UDP Exam Review</button>
+      <button class="btn small secondary" style="text-align:left; font-size:11.5px;" onclick="quickCornerAi('Propose a 2-hour study schedule for Data Structures')">📅 Propose 2-Hour Study Plan</button>
+      <button class="btn small secondary" style="text-align:left; font-size:11.5px;" onclick="quickCornerAi('Draft a polite message to my study partner to practice problem sets')">✉️ Draft Study Partner Message</button>
+    </div>
+    <div id="cornerAiOutput" style="font-size:12px; line-height:1.5; background:var(--input-bg); border:1px solid var(--line); border-radius:4px; padding:10px; max-height:140px; overflow-y:auto; display:none;"></div>
+    <form id="cornerAiForm" onsubmit="submitCornerAi(event)" style="display:flex; gap:6px; margin-top:10px;">
+      <input type="text" id="cornerAiInput" placeholder="Ask any study doubt..." style="flex:1; padding:7px 10px; font-size:12px; border:1px solid var(--line); border-radius:3px; background:var(--input-bg);" required />
+      <button type="submit" class="btn small">Ask</button>
+    </form>
+  </div>
 </div>
+
+<!-- Toast Container (for in-dashboard notifications) -->
+<div id="toastContainer" class="toast-container"></div>
 
 <script src="js/config/config.js"></script>
 <script src="js/utils/theme.js"></script>

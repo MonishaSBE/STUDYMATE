@@ -4,6 +4,7 @@ const db = require('../mockDb');
 const auth = require('../middleware/authenticate');
 const { fallbackData } = require('../services/storageAdapter');
 const { handleChatAssistantPrompt } = require('../services/aiService');
+const { sendPartnerRequestEmail, sendRequestAcceptedEmail } = require('../services/emailService');
 
 /**
  * Direct Messaging & Chat Request Routes
@@ -248,20 +249,39 @@ router.get('/requests/outgoing', auth, (req, res) => {
 
 // 6. POST /api/chat/requests/:id/accept
 // Accept study partner request, verifying intended recipient
-router.post('/requests/:id/accept', auth, (req, res) => {
+router.post('/requests/:id/accept', auth, async (req, res) => {
     const reqId = Number(req.params.id);
-    const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
+    let studentProfile = db.profiles.find(p => Number(p.user_id) === Number(req.session.userId));
     if (!studentProfile) return res.status(401).json({ status: 'failure', message: 'Unauthorized' });
 
-    const reqItem = db.requests.find(r => r.ROWID === reqId);
+    const reqItem = db.requests.find(r => Number(r.ROWID) === reqId || r.ROWID == req.params.id);
     if (!reqItem) return res.status(404).json({ status: 'failure', message: 'Request not found' });
 
     // Authorization verification
-    if (reqItem.receiver_id !== studentProfile.id) {
+    if (Number(reqItem.receiver_id) !== Number(studentProfile.id) && Number(reqItem.receiver_id) !== Number(studentProfile.user_id)) {
         return res.status(403).json({ status: 'failure', message: 'Unauthorized: Only intended recipient can accept this request' });
     }
 
     reqItem.status = 'accepted';
+    await db.saveRequest(reqItem);
+
+    // Send acceptance email to the original sender
+    try {
+        const senderUser = db.users.find(u => u.id === db.profiles.find(p => p.id === reqItem.sender_id)?.user_id);
+        const accepterProfile = db.profiles.find(p => p.id === studentProfile.id);
+        if (senderUser && senderUser.email) {
+            sendRequestAcceptedEmail({
+                accepterName: accepterProfile?.name || studentProfile.name || 'Your classmate',
+                senderName: senderUser.name || senderUser.email,
+                senderEmail: senderUser.email,
+                dashboardUrl: process.env.GOOGLE_CALLBACK_URL
+                    ? process.env.GOOGLE_CALLBACK_URL.replace('/api/auth/google/callback', '/dashboard.html')
+                    : 'http://localhost:3000/dashboard.html'
+            }).catch(() => {});
+        }
+    } catch (emailErr) {
+        console.error('[Email] Could not send acceptance email:', emailErr.message);
+    }
 
     // Ensure conversation is created
     const convs = getConversations();
@@ -300,46 +320,60 @@ router.post('/requests/:id/accept', auth, (req, res) => {
 
 // 7. POST /api/chat/requests/:id/reject
 // Reject study partner request
-router.post('/requests/:id/reject', auth, (req, res) => {
+router.post('/requests/:id/reject', auth, async (req, res) => {
     const reqId = Number(req.params.id);
-    const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
+    let studentProfile = db.profiles.find(p => Number(p.user_id) === Number(req.session.userId));
     if (!studentProfile) return res.status(401).json({ status: 'failure', message: 'Unauthorized' });
 
-    const reqItem = db.requests.find(r => r.ROWID === reqId);
+    const reqItem = db.requests.find(r => Number(r.ROWID) === reqId || r.ROWID == req.params.id);
     if (!reqItem) return res.status(404).json({ status: 'failure', message: 'Request not found' });
 
     // Authorization verification
-    if (reqItem.receiver_id !== studentProfile.id) {
+    if (Number(reqItem.receiver_id) !== Number(studentProfile.id) && Number(reqItem.receiver_id) !== Number(studentProfile.user_id)) {
         return res.status(403).json({ status: 'failure', message: 'Unauthorized: Only intended recipient can reject this request' });
     }
 
     reqItem.status = 'rejected';
+    await db.saveRequest(reqItem);
     res.json({ status: 'success', message: 'Request declined.' });
 });
 
 // 8. POST /api/chat/requests
 // Send study partner request with custom intro message
-router.post('/requests', auth, (req, res) => {
+router.post('/requests', auth, async (req, res) => {
     const { receiver_id, intro_message } = req.body;
-    const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
-    if (!studentProfile) return res.status(401).json({ status: 'failure', message: 'Unauthorized' });
+    let studentProfile = db.profiles.find(p => Number(p.user_id) === Number(req.session.userId));
+    if (!studentProfile) {
+        studentProfile = {
+            id: db.nextId++,
+            user_id: req.session.userId,
+            name: req.session.name || (req.session.email ? req.session.email.split('@')[0] : 'Student'),
+            department: 'General',
+            academic_year: '1st Year',
+            bio: 'Student on StudyMate',
+            available_time: 'Flexible',
+            subjects: []
+        };
+        db.profiles.push(studentProfile);
+        db.persist();
+    }
 
-    const sender_id = studentProfile.id;
+    const sender_id = Number(studentProfile.id);
     const targetReceiverId = Number(receiver_id);
 
     if (sender_id === targetReceiverId) {
         return res.status(400).json({ status: 'failure', message: 'Cannot connect with yourself' });
     }
 
-    const receiver = db.profiles.find(p => p.id === targetReceiverId);
+    const receiver = db.profiles.find(p => Number(p.id) === targetReceiverId || Number(p.user_id) === targetReceiverId);
     if (!receiver) {
         return res.status(404).json({ status: 'failure', message: 'Receiver student profile not found' });
     }
 
     // Check existing request
     const existing = db.requests.find(r => 
-        (r.sender_id === sender_id && r.receiver_id === targetReceiverId) ||
-        (r.sender_id === targetReceiverId && r.receiver_id === sender_id)
+        (Number(r.sender_id) === sender_id && Number(r.receiver_id) === targetReceiverId) ||
+        (Number(r.sender_id) === targetReceiverId && Number(r.receiver_id) === sender_id)
     );
 
     if (existing) {
@@ -354,6 +388,7 @@ router.post('/requests', auth, (req, res) => {
         existing.sender_id = sender_id;
         existing.receiver_id = targetReceiverId;
         existing.intro_message = intro_message || null;
+        await db.saveRequest(existing);
         return res.json({ status: 'success', message: 'Study partner request sent' });
     }
 
@@ -367,7 +402,24 @@ router.post('/requests', auth, (req, res) => {
         intro_message: intro_message ? intro_message.trim() : null,
         created_at: new Date().toISOString()
     };
-    db.requests.push(newRequest);
+    await db.saveRequest(newRequest);
+
+    // Send email to the receiver
+    try {
+        const receiverUser = db.users.find(u => u.id === receiver.user_id);
+        if (receiverUser && receiverUser.email) {
+            sendPartnerRequestEmail({
+                senderName: studentProfile.name || 'Your classmate',
+                senderEmail: req.session.email || '',
+                receiverName: receiver.name,
+                receiverEmail: receiverUser.email,
+                introMessage: newRequest.intro_message || '',
+                acceptUrl: 'http://localhost:3000/dashboard.html'
+            }).catch(() => {});
+        }
+    } catch (emailErr) {
+        console.error('[Email] Could not send request email:', emailErr.message);
+    }
 
     res.json({ status: 'success', message: 'Study partner request sent', data: newRequest });
 });

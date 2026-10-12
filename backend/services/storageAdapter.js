@@ -37,24 +37,7 @@ const fallbackData = {
         { id: 5, institution_id: 2, name: 'Mechanical & Automation Engineering', code: 'MECH' },
         { id: 6, institution_id: 2, name: 'Applied Mathematics & Sciences', code: 'MATH-SCI' }
     ],
-    courses: [
-        { id: 1, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Data Structures and Algorithms', course_code: 'CS3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Trees, balanced search structures, graphs, dynamic programming, and complexity.' },
-        { id: 2, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Database Management Systems', course_code: 'CS3492', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Relational data model, SQL, normalization (1NF-BCNF), and ACID concurrency.' },
-        { id: 3, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Design and Analysis of Algorithms', course_code: 'CS3401', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Asymptotic analysis, divide & conquer, greedy strategy, and NP-completeness.' },
-        { id: 4, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Operating Systems', course_code: 'CS3451', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Process scheduling, virtual memory paging, deadlock avoidance, and file systems.' },
-        { id: 5, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Computer Networks', course_code: 'CS3591', semester: 5, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'OSI/TCP-IP stacks, routing protocols, flow control, and transport layer security.' },
-        { id: 6, department_id: 1, domain: 'Computer Science and Engineering', course_name: 'Compiler Design', course_code: 'CS3501', semester: 5, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Lexical analysis, syntax trees, LR parsers, and intermediate code generation.' },
-        { id: 7, department_id: 3, domain: 'Artificial Intelligence and Machine Learning', course_name: 'Artificial Intelligence and Machine Learning', course_code: 'CS3691', semester: 6, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Supervised/unsupervised models, neural networks, gradient descent, and evaluation metrics.' },
-        { id: 8, department_id: 1, domain: 'Information Technology', course_name: 'Cloud Computing and DevOps', course_code: 'CS3701', semester: 7, academic_year: '4th Year', academic_level: 'Undergraduate', description: 'Containerization, microservices, AWS/GCP paradigms, and CI/CD automation pipelines.' },
-        { id: 9, department_id: 2, domain: 'Cybersecurity', course_name: 'Foundations of Cyber Security', course_code: 'CB3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Security principles, authentication tokens, vulnerabilities, and defense models.' },
-        { id: 10, department_id: 2, domain: 'Cybersecurity', course_name: 'Cryptography and Network Security', course_code: 'CB3401', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Block ciphers, public-key RSA, Diffie-Hellman, SHA-256, and digital certificates.' },
-        { id: 11, department_id: 2, domain: 'Cybersecurity', course_name: 'Ethical Hacking and Penetration Testing', course_code: 'CB3501', semester: 5, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Reconnaissance, vulnerability scanning, exploitation, and mitigation auditing.' },
-        { id: 12, department_id: 2, domain: 'Cybersecurity', course_name: 'Digital Forensics and Incident Response', course_code: 'CB3601', semester: 6, academic_year: '3rd Year', academic_level: 'Undergraduate', description: 'Evidence preservation, memory analysis, log examination, and chain of custody.' },
-        { id: 13, department_id: 3, domain: 'Data Science', course_name: 'Data Science & Statistical Inference', course_code: 'DS3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Exploratory data analysis, probability distributions, regression, and PCA.' },
-        { id: 14, department_id: 4, domain: 'Electronics and Communication Engineering', course_name: 'Digital Signal Processing & Microcontrollers', course_code: 'EC3401', semester: 4, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'FFT algorithms, FIR/IIR filters, ARM architectures, and embedded peripherals.' },
-        { id: 15, department_id: 5, domain: 'Mechanical Engineering', course_name: 'Thermodynamics and Fluid Mechanics', course_code: 'ME3301', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Carnot cycles, entropy principles, Navier-Stokes formulation, and heat transfer.' },
-        { id: 16, department_id: 6, domain: 'Mathematics', course_name: 'Discrete Mathematics and Graph Theory', course_code: 'MA3354', semester: 3, academic_year: '2nd Year', academic_level: 'Undergraduate', description: 'Propositional logic, recurrence relations, trees, planar graphs, and combinatorics.' }
-    ],
+    courses: [],
     library_books: [
         {
             id: 1,
@@ -162,78 +145,9 @@ const fallbackData = {
             cover_color: '#d35400'
         }
     ],
-    materials: [
-        {
-            id: 1,
-            title: 'CS3301 DSA Comprehensive Revision Guide & Practice Problems',
-            description: 'Complete unit-wise coverage of Trees, Graphs, Sorting algorithms and asymptotic complexity analysis.',
-            course_id: 1,
-            institution_id: 1,
-            subject_name: 'Data Structures and Algorithms',
-            resource_type: 'revision_sheet',
-            examination_type: 'University Semester Exam',
-            file_path: null,
-            file_name: 'CS3301_DSA_Revision_Guide.pdf',
-            file_size: 2450000,
-            mime_type: 'application/pdf',
-            uploaded_by: 1,
-            uploader_name: 'Alex Johnson',
-            views_count: 84,
-            downloads_count: 32,
-            is_moderated: true,
-            tags: ['Trees', 'Graphs', 'Time Complexity', 'Algorithms'],
-            created_at: new Date(Date.now() - 86400000 * 3).toISOString()
-        },
-        {
-            id: 2,
-            title: 'CB3401 Cryptography & Network Security Question Bank with Solutions',
-            description: 'Model question bank containing 2-mark and 13-mark solved problems on AES, RSA, Diffie-Hellman and SHA-256.',
-            course_id: 10,
-            institution_id: 1,
-            subject_name: 'Cryptography and Network Security',
-            resource_type: 'question_bank',
-            examination_type: 'Model Examination',
-            file_path: null,
-            file_name: 'CB3401_Crypto_QB_Solved.pdf',
-            file_size: 3820000,
-            mime_type: 'application/pdf',
-            uploaded_by: 2,
-            uploader_name: 'Sam Smith',
-            views_count: 142,
-            downloads_count: 65,
-            is_moderated: true,
-            tags: ['Cryptography', 'RSA', 'AES', 'Cyber Security'],
-            created_at: new Date(Date.now() - 86400000 * 2).toISOString()
-        },
-        {
-            id: 3,
-            title: 'CS3492 DBMS Unit 3 & 4 Normalization & Transaction Processing Notes',
-            description: 'Concise lecture notes detailing 1NF to BCNF decompositions, ACID properties, and Concurrency Control protocols.',
-            course_id: 2,
-            institution_id: 1,
-            subject_name: 'Database Management Systems',
-            resource_type: 'lecture_notes',
-            examination_type: 'University Semester Exam',
-            file_path: null,
-            file_name: 'CS3492_DBMS_Unit3_4_Notes.pdf',
-            file_size: 1940000,
-            mime_type: 'application/pdf',
-            uploaded_by: 3,
-            uploader_name: 'Taylor Doe',
-            views_count: 98,
-            downloads_count: 41,
-            is_moderated: true,
-            tags: ['DBMS', 'SQL', 'Normalization', 'Transactions'],
-            created_at: new Date(Date.now() - 86400000 * 1).toISOString()
-        }
-    ],
-    bookmarks: [
-        { id: 1, user_id: 1, material_id: 2, created_at: new Date().toISOString() }
-    ],
-    ratings: [
-        { id: 1, user_id: 1, material_id: 2, rating: 5, review: 'Extremely helpful for solving RSA and Diffie-Hellman numericals!', created_at: new Date().toISOString() },
-        { id: 2, user_id: 2, material_id: 1, rating: 5, review: 'Clear visual tree rotation steps.', created_at: new Date().toISOString() }
-    ],
+    materials: [],
+    bookmarks: [],
+    ratings: [],
     reports: [],
     quizzes: [
         {
@@ -328,80 +242,10 @@ const fallbackData = {
             ]
         }
     ],
-    community_questions: [
-        {
-            id: 1,
-            user_id: 2,
-            author_name: 'Sam Smith',
-            subject: 'Operating Systems',
-            title: 'Why is Banker’s Algorithm rarely implemented in general-purpose operating systems?',
-            content: 'In our OS class we learned that Banker\'s Algorithm avoids deadlocks by simulating allocation of pre-declared maximum resources. Why do modern OS like Linux or Windows prefer detection or recovery instead of strict avoidance?',
-            tags: 'Deadlock, Bankers Algorithm, OS, Concurrency',
-            is_resolved: true,
-            views_count: 57,
-            created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-            answers: [
-                {
-                    id: 1,
-                    question_id: 1,
-                    user_id: 1,
-                    author_name: 'Alex Johnson',
-                    content: 'In practice, processes cannot reliably know or declare their maximum resource requirement in advance. Furthermore, process count and resource availability dynamically fluctuate in multi-tenant systems, making the constant O(m * n^2) simulation overhead prohibitively expensive.',
-                    is_accepted: true,
-                    upvotes: 6,
-                    created_at: new Date(Date.now() - 86400000 * 1).toISOString()
-                }
-            ]
-        },
-        {
-            id: 2,
-            user_id: 3,
-            author_name: 'Taylor Doe',
-            subject: 'Design and Analysis of Algorithms',
-            title: 'When should we use Dynamic Programming vs Greedy Strategy?',
-            content: 'I frequently get confused during exam problem formulation whether a problem exhibits optimal substructure with overlapping subproblems or if a greedy choice property suffices.',
-            tags: 'Algorithms, Dynamic Programming, Greedy, Optimization',
-            is_resolved: false,
-            views_count: 42,
-            created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-            answers: []
-        }
-    ],
+    community_questions: [],
     community_votes: {},
     ai_conversations: [],
-    // Direct Messaging & Conversations between accepted study partners
-    conversations: [
-        {
-            id: 1,
-            type: 'direct',
-            participants: [1, 2], // Alex Johnson (1) & Sam Smith (2)
-            title: null,
-            created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-            updated_at: new Date(Date.now() - 3600000).toISOString()
-        }
-    ],
-    messages: [
-        {
-            id: 1,
-            conversation_id: 1,
-            sender_id: 2,
-            sender_name: 'Sam Smith',
-            content: 'Hey Alex! Glad we connected. Are you studying Unit 3 of Machine Learning today?',
-            message_type: 'text',
-            status: 'read',
-            created_at: new Date(Date.now() - 3600000 * 3).toISOString()
-        },
-        {
-            id: 2,
-            conversation_id: 1,
-            sender_id: 1,
-            sender_name: 'Alex Johnson',
-            content: 'Hey Sam! Yes, reviewing backpropagation and gradient descent algorithms right now.',
-            message_type: 'text',
-            status: 'read',
-            created_at: new Date(Date.now() - 3600000).toISOString()
-        }
-    ],
+    messages: [],
     nextId: 100
 };
 

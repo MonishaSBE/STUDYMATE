@@ -8,7 +8,6 @@ function evaluateGoal(g) {
     const today = new Date().toISOString().split('T')[0];
     const isOverdue = !g.is_completed && g.target_date && g.target_date < today;
     
-    // Check if reminder is due
     let isReminderDue = false;
     if (!g.is_completed && g.reminder_datetime) {
         const now = new Date();
@@ -23,20 +22,21 @@ function evaluateGoal(g) {
     };
 }
 
-// 1. GET /api/goals/:studentId - List goals with overdue and reminder state
+// GET /api/goals/:studentId — List goals + streak data
 router.get('/:studentId', auth, (req, res) => {
     try {
         const studentId = Number(req.params.studentId);
-        const goals = (db.goals || []).filter(g => g.student_id == studentId);
+        const goals = (db.goals || []).filter(g => Number(g.student_id) === studentId);
         const evaluated = goals.map(evaluateGoal);
-        res.json({ status: 'success', data: evaluated });
+        const streak = db.getStreak(studentId);
+        res.json({ status: 'success', data: evaluated, streak });
     } catch (err) {
         res.status(500).json({ status: 'failure', message: err.message });
     }
 });
 
 // 2. POST /api/goals - Create new goal with optional description and reminder
-router.post('/', auth, (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         const { student_id, goal_text, description, target_date, reminder_datetime } = req.body;
         if (!goal_text || !goal_text.trim()) {
@@ -56,7 +56,7 @@ router.post('/', auth, (req, res) => {
             created_at: new Date().toISOString()
         };
 
-        db.goals.push(newGoal);
+        await db.saveGoal(newGoal);
         res.json({ status: 'success', data: newGoal });
     } catch (err) {
         res.status(500).json({ status: 'failure', message: err.message });
@@ -64,7 +64,7 @@ router.post('/', auth, (req, res) => {
 });
 
 // 3. PUT /api/goals/:id - Update completion status or edit goal & reminders
-router.put('/:id', auth, (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     try {
         const goal = db.goals.find(g => g.ROWID == req.params.id);
         if (!goal) return res.status(404).json({ status: 'failure', message: 'Goal not found' });
@@ -72,11 +72,40 @@ router.put('/:id', auth, (req, res) => {
         const { is_completed, goal_text, description, target_date, reminder_datetime, reminder_acknowledged } = req.body;
 
         if (is_completed !== undefined) {
+            const wasCompleted = goal.is_completed;
             goal.is_completed = Boolean(is_completed);
             goal.completed_at = is_completed ? new Date().toISOString() : null;
             if (is_completed) {
-                // Cancel pending reminder once completed
                 goal.reminder_sent = true;
+
+                // --- Streak tracking ---
+                if (!wasCompleted) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const studentId = goal.student_id;
+                    const streak = db.getStreak(studentId);
+                    const lastDate = streak.lastCompletedDate;
+
+                    if (lastDate === today) {
+                        // Already completed a goal today, streak stays the same
+                    } else {
+                        const yesterday = new Date();
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                        if (lastDate === yesterdayStr) {
+                            // Consecutive day — increment streak
+                            streak.current = (streak.current || 0) + 1;
+                        } else {
+                            // Streak broken — restart
+                            streak.current = 1;
+                        }
+                        streak.longest = Math.max(streak.longest || 0, streak.current);
+                        streak.lastCompletedDate = today;
+                        db.saveStreak(studentId, streak);
+                    }
+                }
+            } else {
+                // Uncompleting a goal doesn't reduce streak
             }
         }
 
@@ -85,13 +114,14 @@ router.put('/:id', auth, (req, res) => {
         if (target_date !== undefined) goal.target_date = target_date;
         if (reminder_datetime !== undefined) {
             goal.reminder_datetime = reminder_datetime;
-            goal.reminder_sent = false; // Reset reminder trigger if rescheduled
+            goal.reminder_sent = false;
         }
 
         if (reminder_acknowledged) {
             goal.reminder_sent = true;
         }
 
+        await db.saveGoal(goal);
         res.json({ status: 'success', data: evaluateGoal(goal) });
     } catch (err) {
         res.status(500).json({ status: 'failure', message: err.message });
@@ -99,12 +129,9 @@ router.put('/:id', auth, (req, res) => {
 });
 
 // 4. DELETE /api/goals/:id - Delete goal
-router.delete('/:id', auth, (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
-        const idx = db.goals.findIndex(g => g.ROWID == req.params.id);
-        if (idx === -1) return res.status(404).json({ status: 'failure', message: 'Goal not found' });
-
-        db.goals.splice(idx, 1);
+        await db.deleteGoal(Number(req.params.id));
         res.json({ status: 'success', message: 'Goal deleted' });
     } catch (err) {
         res.status(500).json({ status: 'failure', message: err.message });

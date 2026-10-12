@@ -3,6 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const db = require('../mockDb');
 const auth = require('../middleware/authenticate');
 const { fallbackData, isMySqlAvailable, pool } = require('../services/storageAdapter');
 const { UPLOADS_DIR, MAX_FILE_SIZE_BYTES, sanitizeFilename, isValidFileType } = require('../config/storage');
@@ -217,22 +218,41 @@ router.post('/upload', auth, upload.single('document'), async (req, res) => {
 
 // 4. Secure File Download
 router.get('/:id/download', auth, (req, res) => {
-    const id = Number(req.params.id);
-    const material = fallbackData.materials.find(m => m.id === id);
-    if (!material) {
-        return res.status(404).json({ status: 'failure', message: 'Material not found' });
+    try {
+        let rawId = req.params.id;
+        let numId = Number(String(rawId).replace('mat_', ''));
+        const material = fallbackData.materials.find(m => m.id == numId || m.id == rawId);
+        const note = db.notes ? db.notes.find(n => n.ROWID == rawId || n.ROWID == numId || n.id == rawId || n.id == numId) : null;
+        const item = material || note;
+
+        if (!item) {
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            return res.status(404).send('StudyMate Error: The requested material was not found.');
+        }
+
+        if (material) {
+            material.downloads_count = (material.downloads_count || 0) + 1;
+        }
+
+        const filePath = item.file_path;
+        if (filePath && fs.existsSync(filePath)) {
+            const fileName = item.file_name || `${(item.title || 'Material').replace(/[^a-zA-Z0-9_\-\.]/g, '_')}${path.extname(filePath) || '.pdf'}`;
+            return res.download(filePath, fileName);
+        }
+
+        if (item.file_url && item.file_url !== '#') {
+            return res.redirect(item.file_url);
+        }
+
+        // If simulated or text-only document, serve formatted readable document (.txt) with proper headers
+        const safeTitle = (item.title || 'StudyMate_Document').replace(/[^a-zA-Z0-9_\-]/g, '_');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.txt"`);
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        return res.send(`=========================================\nStudyMate Academic Resource\n=========================================\n\nTitle: ${item.title}\nSubject: ${item.subject_name || item.subject || 'General'}\nDomain: ${item.domain || 'Academic'}\nUploaded by: ${item.uploader_name || 'Student'}\nDate: ${new Date(item.created_at || Date.now()).toLocaleDateString()}\n\nContent & Summary:\n${item.description || 'No additional content provided.'}\n`);
+    } catch (err) {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.status(500).send('Error downloading file: ' + err.message);
     }
-
-    material.downloads_count = (material.downloads_count || 0) + 1;
-
-    if (material.file_path && fs.existsSync(material.file_path)) {
-        return res.download(material.file_path, material.file_name);
-    }
-
-    // If simulated sample item with no physical file, generate text summary attachment
-    res.setHeader('Content-Disposition', `attachment; filename="${material.file_name || 'studymate_document.txt'}"`);
-    res.setHeader('Content-Type', 'text/plain');
-    res.send(`StudyMate Academic Resource\n\nTitle: ${material.title}\nSubject: ${material.subject_name}\nDescription: ${material.description}\nUploader: ${material.uploader_name}\nType: ${material.resource_type}\nDate: ${material.created_at}`);
 });
 
 // 5. Toggle Bookmark (Feature Module 9)

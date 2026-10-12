@@ -1,52 +1,467 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>StudyMate — Find Your Study Partner</title>
-<link rel="stylesheet" href="css/style.css" />
-<style>
-.auth-form { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-.auth-form button { margin-top: 10px; }
-.toggle-auth { font-size: 13px; color: var(--pin-teal); cursor: pointer; margin-top: 10px; display: inline-block; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMate — Find Your Study Partner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Campus Noticeboard Topbar */
+    .landing-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: var(--topbar-bg);
+      color: var(--topbar-text);
+      border-bottom: 2px solid var(--cork);
+    }
+
+    .landing-brand {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--topbar-text);
+      text-decoration: none;
+    }
+
+    .landing-brand .pin {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--highlight);
+      display: inline-block;
+      box-shadow: 0 0 8px var(--highlight);
+    }
+
+    /* Notebook Index Card Wrapper */
+    .notebook-auth-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .notebook-auth-card {
+      width: 100%;
+      max-width: 500px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 36px 32px;
+      box-shadow: 0 5px 0 var(--cork), 0 10px 25px rgba(28, 43, 58, 0.08);
+      position: relative;
+    }
+
+    /* Red Pushpin at top center of card */
+    .card-pushpin {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      background: var(--pin-red);
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+    }
+
+    .notebook-auth-card h1 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      color: var(--ink);
+      margin: 8px 0 4px;
+    }
+
+    .notebook-auth-card .sub {
+      color: var(--ink-soft);
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    /* Index Card Tab Strip */
+    .card-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid var(--cork);
+      margin-bottom: 20px;
+    }
+
+    .card-tab-btn {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 9px 16px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--ink-soft);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .card-tab-btn.active {
+      color: var(--ink);
+      border-bottom-color: var(--highlight);
+      font-weight: 700;
+      background: rgba(242, 183, 5, 0.08);
+    }
+
+    /* Demo Quick Logins */
+    .demo-bar {
+      margin-bottom: 18px;
+      padding: 10px 14px;
+      background: var(--input-bg);
+      border: 1px dashed var(--cork);
+      border-radius: 4px;
+    }
+
+    .demo-bar-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--pin-teal);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+    }
+
+    .demo-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .demo-chip-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 3px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .demo-chip-btn:hover {
+      border-color: var(--pin-teal);
+      background: var(--highlight);
+      color: var(--highlight-ink);
+    }
+
+    /* Form Fields */
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group label {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-soft);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .input-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-box input,
+    .input-box select {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: var(--font-body);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      background: var(--input-bg);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+
+    .input-box input:focus,
+    .input-box select:focus {
+      border-color: var(--pin-teal);
+      background: #ffffff;
+    }
+
+    .pw-toggle-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: var(--ink-soft);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 13px;
+    }
+
+    /* Floating AI Study Co-Pilot Badge in Bottom Right Corner */
+    .floating-ai-corner-widget {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border: 2px solid var(--pin-teal);
+      border-radius: 999px;
+      padding: 8px 16px;
+      box-shadow: 0 4px 14px rgba(47, 143, 138, 0.25), 0 3px 0 var(--cork);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .floating-ai-corner-widget:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(47, 143, 138, 0.35);
+      background: var(--highlight);
+      color: var(--highlight-ink);
+      border-color: var(--highlight);
+    }
+
+    .ai-logo-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--pin-teal);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    .floating-ai-corner-widget:hover .ai-logo-icon {
+      background: var(--ink);
+      color: var(--highlight);
+    }
+  </style>
 </head>
 <body>
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <span class="eyebrow">// studymate</span>
-      <h1>Find your study partner</h1>
-      <p class="sub" id="authSub">Sign in to get matched with classmates.</p>
-      
-      <div id="signin">
-        <form class="auth-form" id="loginForm">
-          <input type="email" id="l_email" placeholder="Email" required />
-          <input type="password" id="l_password" placeholder="Password" required />
-          <button type="submit" class="btn">Sign In</button>
-        </form>
-        <span class="toggle-auth" onclick="toggleAuth()">Need an account? Register here.</span>
+
+  <!-- Noticeboard Header -->
+  <header class="landing-topbar">
+    <div class="landing-brand">
+      <span class="pin"></span>
+      <i class="fa-solid fa-graduation-cap" style="color:var(--highlight); margin-right:4px;"></i>
+      <span>StudyMate</span>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="db-status-pill" title="MongoDB Atlas Cluster: Connected & Synchronized">
+        <div class="pulse-dot"></div>
+        <span>MongoDB Atlas Active</span>
       </div>
 
-      <div id="signup" style="display:none;">
-        <form class="auth-form" id="registerForm">
-          <input type="email" id="r_email" placeholder="Email" required />
-          <input type="password" id="r_password" placeholder="Password" required />
-          <button type="submit" class="btn">Register</button>
-        </form>
-        <span class="toggle-auth" onclick="toggleAuth()">Already have an account? Sign in.</span>
+      <!-- Theme Selector Button -->
+      <button class="theme-toggle-btn" onclick="StudyMateTheme.openThemeModal()" title="Customize Theme" style="padding:5px 12px; border-radius:4px; border:1px solid var(--cork); background:rgba(255,255,255,0.08); color:var(--topbar-text); cursor:pointer; font-family:var(--font-mono); font-size:12px; display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-palette"></i> <span class="theme-current-name">Theme</span>
+      </button>
+
+      <!-- Zoom Controls -->
+      <div class="zoom-controls" title="Adjust view scale">
+        <button class="zoom-btn" onclick="StudyMateZoom.zoomOut()">−</button>
+        <span class="zoom-level-label" onclick="StudyMateZoom.resetZoom()">100%</span>
+        <button class="zoom-btn" onclick="StudyMateZoom.zoomIn()">+</button>
       </div>
     </div>
-  <!-- Floating Theme & Zoom Controller -->
-  <div class="floating-zoom-widget">
-    <button class="theme-toggle-btn" onclick="StudyMateTheme.openThemeModal()" title="Customize Theme" style="padding:4px 10px;">
-      <span>🎨</span> <span class="theme-current-name">Theme</span>
-    </button>
-    <div class="zoom-controls" title="Adjust application view scale (or use Ctrl + / Ctrl -)">
-      <button class="zoom-btn" onclick="StudyMateZoom.zoomOut()" title="Zoom Out (Ctrl -)">−</button>
-      <span class="zoom-level-label" onclick="StudyMateZoom.resetZoom()" title="Reset to default 100% scale">100%</span>
-      <button class="zoom-btn" onclick="StudyMateZoom.zoomIn()" title="Zoom In (Ctrl +)">+</button>
+  </header>
+
+  <!-- Notebook Index Card Auth Form -->
+  <main class="notebook-auth-wrap">
+    <div class="notebook-auth-card">
+      <div class="card-pushpin"><i class="fa-solid fa-thumbtack"></i></div>
+
+      <span class="eyebrow">// studymate campus noticeboard</span>
+      <h1>Find your study partner</h1>
+      <p class="sub" id="authSub">Sign in to get matched with classmates or share academic notes.</p>
+
+      <!-- Index Card Tabs -->
+      <div class="card-tabs">
+        <button type="button" class="card-tab-btn active" id="tabSignIn" onclick="switchAuthMode('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+        <button type="button" class="card-tab-btn" id="tabSignUp" onclick="switchAuthMode('register')">
+          <i class="fa-solid fa-user-plus"></i> Create Account
+        </button>
+      </div>
+
+      <!-- Google Sign-In Button -->
+      <div id="googleSignInBar" style="margin-bottom:18px;">
+        <button type="button" id="googleSignInBtn" onclick="initiateGoogleSignIn()" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 16px; border:1px solid var(--line); border-radius:4px; background:var(--card); color:var(--ink); font-family:var(--font-body); font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='var(--input-bg)'" onmouseout="this.style.background='var(--card)'">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        <div id="googleOAuthStatus" style="font-size:11px; color:var(--ink-soft); text-align:center; margin-top:6px; display:none;"></div>
+        <div style="display:flex; align-items:center; gap:8px; margin:14px 0 0;">
+          <div style="flex:1; height:1px; background:var(--line);"></div>
+          <span style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono);">OR</span>
+          <div style="flex:1; height:1px; background:var(--line);"></div>
+        </div>
+      </div>
+
+      <!-- SIGN IN FORM -->
+      <form class="auth-form" id="loginForm">
+        <div class="form-group">
+          <label for="l_email">Email address</label>
+          <div class="input-box">
+            <input type="email" id="l_email" placeholder="e.g. alex@university.edu" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="l_password">
+            <span>Password</span>
+            <span style="color:var(--pin-teal); cursor:pointer; font-size:11px;" onclick="showToast('Default demo password is: password', 'info')">Forgot?</span>
+          </label>
+          <div class="input-box">
+            <input type="password" id="l_password" placeholder="Your password" required />
+            <button type="button" class="pw-toggle-btn" onclick="togglePasswordVisibility('l_password', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:4px;">
+          <button type="submit" class="btn" id="btnSignInSubmit" style="width:100%; padding:11px 16px;">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+          </button>
+        </div>
+      </form>
+
+      <!-- CREATE ACCOUNT FORM (DYNAMIC MONGO REGISTRATION) -->
+      <form class="auth-form" id="registerForm" style="display:none;">
+        <div class="form-group">
+          <label for="r_name">Student Full Name</label>
+          <div class="input-box">
+            <input type="text" id="r_name" placeholder="e.g. Swetha Monica" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="r_email">Email address</label>
+          <div class="input-box">
+            <input type="email" id="r_email" placeholder="e.g. swetha@university.edu" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="r_password">Create Password</label>
+          <div class="input-box">
+            <input type="password" id="r_password" placeholder="At least 6 characters" required />
+            <button type="button" class="pw-toggle-btn" onclick="togglePasswordVisibility('r_password', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid-2" style="gap:10px;">
+          <div class="form-group">
+            <label for="r_dept">Department</label>
+            <div class="input-box">
+              <select id="r_dept">
+                <option value="Computer Science and Engineering">Computer Science</option>
+                <option value="Cyber Security">Cyber Security</option>
+                <option value="Artificial Intelligence and Data Science">AI & Data Science</option>
+                <option value="Information Technology">Information Tech</option>
+                <option value="Electronics & Communication">Electronics (ECE)</option>
+                <option value="Mechanical Engineering">Mechanical</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="r_year">Academic Year</label>
+            <div class="input-box">
+              <select id="r_year">
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year" selected>3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="r_subjects">Subjects (comma separated)</label>
+          <div class="input-box">
+            <input type="text" id="r_subjects" placeholder="Data Structures, DBMS, Machine Learning" />
+          </div>
+        </div>
+
+        <div style="margin-top:4px;">
+          <button type="submit" class="btn" id="btnSignUpSubmit" style="width:100%; padding:11px 16px;">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+          </button>
+        </div>
+      </form>
+
     </div>
-  </div>
+  </main>
+
+  <!-- Floating AI Assistant Logo in the Right Corner -->
+  <a href="dashboard.html" class="floating-ai-corner-widget" title="Ask StudyMate AI Assistant">
+    <div class="ai-logo-icon">
+      <i class="fa-solid fa-robot"></i>
+    </div>
+    <span>StudyMate AI Assistant</span>
+  </a>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <script src="js/config/config.js"></script>
   <script src="js/utils/theme.js"></script>

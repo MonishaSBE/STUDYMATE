@@ -7,41 +7,7 @@ const { fallbackData } = require('../services/storageAdapter');
 
 // Ensure storage container exists
 if (!fallbackData.support_queries) {
-    fallbackData.support_queries = [
-        {
-            id: 1,
-            user_id: 2, // Sam Smith
-            student_name: 'Sam Smith',
-            student_email: 'student2@test.com',
-            title: 'Clarification regarding Dijkstra algorithm negative weights',
-            description: 'Hello Admin/Faculty, in our Algorithms assignment question 3, we are asked why Dijkstra fails with negative cycles. Could you clarify whether Dijkstra works if edge weights are negative but there are no negative cycles?',
-            category: 'academic_doubt',
-            status: 'answered',
-            attachment_name: null,
-            attachment_path: null,
-            created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-            updated_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-            responses: [
-                {
-                    id: 1,
-                    sender_id: 1, // Admin (Alex Johnson)
-                    sender_name: 'Academic Administrator',
-                    sender_role: 'admin',
-                    message: 'Great question Sam! Dijkstra’s greedy invariant assumes that once a node is marked visited, its shortest distance is finalized. With negative edges (even without negative cycles), this assumption breaks because a longer path could become shorter later. Use the Bellman-Ford algorithm instead.',
-                    created_at: new Date(Date.now() - 86400000 * 1).toISOString()
-                }
-            ],
-            internal_notes: [
-                {
-                    id: 1,
-                    admin_id: 1,
-                    admin_name: 'Alex Johnson',
-                    note: 'Student understands greedy choice principles well. Resolved via standard Bellman-Ford comparative pointer.',
-                    created_at: new Date(Date.now() - 86400000 * 1).toISOString()
-                }
-            ]
-        }
-    ];
+    fallbackData.support_queries = [];
 }
 
 // -------------------------------------------------------------

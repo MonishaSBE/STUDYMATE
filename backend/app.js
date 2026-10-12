@@ -2,9 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
+const { connectDB } = require('./config/mongodb');
+
 const app = express();
+
+// Initialize MongoDB connection on launch
+connectDB();
 
 app.use(cors());
 app.use(express.json());
@@ -48,7 +54,23 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '../frontend')));
 
+// 404 Handler: When user requests a page that is not found
+app.use((req, res, next) => {
+    // Return JSON error for unmatched API endpoints
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({
+            status: 'failure',
+            message: `Requested API endpoint not found: ${req.method} ${req.originalUrl}`
+        });
+    }
 
+    // Return custom designed 404.html page for web requests
+    const notFoundFile = path.join(__dirname, '../frontend/404.html');
+    if (fs.existsSync(notFoundFile)) {
+        return res.status(404).sendFile(notFoundFile);
+    }
+    res.status(404).send('<!DOCTYPE html><html><head><title>404 Not Found</title></head><body style="font-family:sans-serif;text-align:center;padding:50px;"><h1>404 — Page Not Found</h1><p>The requested page does not exist.</p><a href="/">Return to StudyMate</a></body></html>');
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

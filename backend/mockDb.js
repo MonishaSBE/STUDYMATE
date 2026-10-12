@@ -52,7 +52,154 @@ function persist() {
     }
 }
 
-// Sync with MongoDB Atlas if connected
+// Load data from MongoDB Atlas if available
+async function loadFromMongo() {
+    if (!isMongoConnected()) return;
+    try {
+        const [users, profiles, groups, requests, notes, goals, materials] = await Promise.all([
+            User.find({}).lean(),
+            Profile.find({}).lean(),
+            Group.find({}).lean(),
+            Request.find({}).lean(),
+            Note.find({}).lean(),
+            Goal.find({}).lean(),
+            Material.find({}).lean()
+        ]);
+
+        if (users && users.length > 0) {
+            users.forEach(u => {
+                const uid = u.userId || u.id;
+                const idx = store.users.findIndex(x => x.id === uid || x.email === u.email);
+                const obj = {
+                    id: uid,
+                    name: u.name || '',
+                    email: u.email,
+                    password_hash: u.password_hash || null,
+                    google_id: u.google_id || null,
+                    role: u.role || 'student'
+                };
+                if (idx >= 0) store.users[idx] = { ...store.users[idx], ...obj };
+                else store.users.push(obj);
+            });
+        }
+
+        if (profiles && profiles.length > 0) {
+            profiles.forEach(p => {
+                const pid = p.profileId || p.id;
+                const idx = store.profiles.findIndex(x => x.id === pid || x.user_id === p.user_id);
+                const obj = {
+                    id: pid,
+                    user_id: p.user_id,
+                    name: p.name,
+                    email: p.email || '',
+                    department: p.department || '',
+                    academic_year: p.academic_year || '',
+                    bio: p.bio || '',
+                    available_time: p.available_time || '',
+                    subjects: p.subjects || [],
+                    active_days: p.active_days || []
+                };
+                if (idx >= 0) store.profiles[idx] = { ...store.profiles[idx], ...obj };
+                else store.profiles.push(obj);
+            });
+        }
+
+        if (groups && groups.length > 0) {
+            groups.forEach(g => {
+                const idx = store.groups.findIndex(x => x.ROWID === g.ROWID);
+                const obj = {
+                    ROWID: g.ROWID,
+                    group_name: g.group_name,
+                    description: g.description || '',
+                    max_members: g.max_members || 6,
+                    created_by: g.created_by,
+                    members: g.members || []
+                };
+                if (idx >= 0) store.groups[idx] = { ...store.groups[idx], ...obj };
+                else store.groups.push(obj);
+            });
+        }
+
+        if (requests && requests.length > 0) {
+            requests.forEach(r => {
+                const idx = store.requests.findIndex(x => x.ROWID === r.ROWID);
+                const obj = {
+                    ROWID: r.ROWID,
+                    sender_id: r.sender_id,
+                    receiver_id: r.receiver_id,
+                    status: r.status || 'pending',
+                    sender_name: r.sender_name || '',
+                    receiver_name: r.receiver_name || '',
+                    intro_message: r.intro_message || '',
+                    created_at: r.createdAt || r.created_at || new Date().toISOString()
+                };
+                if (idx >= 0) store.requests[idx] = { ...store.requests[idx], ...obj };
+                else store.requests.push(obj);
+            });
+        }
+
+        if (notes && notes.length > 0) {
+            notes.forEach(n => {
+                const idx = store.notes.findIndex(x => x.ROWID === n.ROWID);
+                const obj = {
+                    ROWID: n.ROWID,
+                    user_id: n.user_id,
+                    group_id: n.group_id || null,
+                    uploaded_by: n.uploaded_by,
+                    uploader_name: n.uploader_name || 'Student',
+                    title: n.title,
+                    description: n.description || '',
+                    subject: n.subject || 'General',
+                    domain: n.domain || 'Computer Science and Engineering',
+                    resource_type: n.resource_type || 'lecture_notes',
+                    academic_year: n.academic_year || '2nd Year',
+                    file_url: n.file_url || '#',
+                    file_path: n.file_path || null,
+                    file_name: n.file_name || null,
+                    file_size: n.file_size || 0,
+                    visibility: n.visibility || 'public',
+                    created_at: n.createdAt || n.created_at || new Date().toISOString()
+                };
+                if (idx >= 0) store.notes[idx] = { ...store.notes[idx], ...obj };
+                else store.notes.push(obj);
+            });
+        }
+
+        if (goals && goals.length > 0) {
+            goals.forEach(gl => {
+                const idx = store.goals.findIndex(x => x.ROWID === gl.ROWID);
+                const obj = {
+                    ROWID: gl.ROWID,
+                    student_id: gl.student_id,
+                    goal_text: gl.goal_text,
+                    target_date: gl.target_date || '',
+                    is_completed: gl.is_completed || false
+                };
+                if (idx >= 0) store.goals[idx] = { ...store.goals[idx], ...obj };
+                else store.goals.push(obj);
+            });
+        }
+
+        // Recompute nextId
+        const ids = [
+            ...store.users.map(u => u.id || 0),
+            ...store.profiles.map(p => p.id || 0),
+            ...store.groups.map(g => g.ROWID || 0),
+            ...store.requests.map(r => r.ROWID || 0),
+            ...store.notes.map(n => n.ROWID || 0),
+            ...store.goals.map(gl => gl.ROWID || 0),
+            store.nextId || 1
+        ];
+        store.nextId = Math.max(...ids, 0) + 1;
+
+        persist();
+        console.log(`✅ [MongoDB] Synchronized data from MongoDB Atlas into active store (${store.users.length} users, ${store.profiles.length} profiles, ${store.notes.length} notes, ${store.requests.length} requests, ${store.groups.length} groups, ${store.goals.length} goals).`);
+    } catch (err) {
+        console.error('❌ [MongoDB] Error loading data from Atlas:', err.message);
+    }
+}
+
+// Sync local in-memory store to MongoDB Atlas if connected
 async function syncMongo() {
     if (!isMongoConnected()) return;
     try {
@@ -60,7 +207,7 @@ async function syncMongo() {
         for (const u of store.users) {
             await User.findOneAndUpdate(
                 { email: u.email },
-                { userId: u.id, name: u.name || '', email: u.email, password_hash: u.password_hash, role: u.role },
+                { userId: u.id, name: u.name || '', email: u.email, password_hash: u.password_hash || null, google_id: u.google_id || null, role: u.role || 'student' },
                 { upsert: true, new: true }
             );
         }
@@ -68,8 +215,8 @@ async function syncMongo() {
         // Sync Profiles
         for (const p of store.profiles) {
             await Profile.findOneAndUpdate(
-                { profileId: p.id },
-                { profileId: p.id, user_id: p.user_id, name: p.name, department: p.department, academic_year: p.academic_year, bio: p.bio, available_time: p.available_time, subjects: p.subjects },
+                { user_id: p.user_id },
+                { profileId: p.id, user_id: p.user_id, name: p.name, email: p.email || '', department: p.department, academic_year: p.academic_year, bio: p.bio, available_time: p.available_time, subjects: p.subjects, active_days: p.active_days },
                 { upsert: true, new: true }
             );
         }
@@ -87,7 +234,7 @@ async function syncMongo() {
         for (const r of store.requests) {
             await Request.findOneAndUpdate(
                 { ROWID: r.ROWID },
-                { ROWID: r.ROWID, sender_id: r.sender_id, receiver_id: r.receiver_id, status: r.status, sender_name: r.sender_name, receiver_name: r.receiver_name },
+                { ROWID: r.ROWID, sender_id: r.sender_id, receiver_id: r.receiver_id, status: r.status, sender_name: r.sender_name, receiver_name: r.receiver_name, intro_message: r.intro_message || '' },
                 { upsert: true, new: true }
             );
         }
@@ -105,13 +252,12 @@ async function syncMongo() {
         for (const n of store.notes) {
             await Note.findOneAndUpdate(
                 { ROWID: n.ROWID },
-                { ROWID: n.ROWID, group_id: n.group_id, uploaded_by: n.uploaded_by, title: n.title, file_url: n.file_url, uploader_name: n.uploader_name },
+                n,
                 { upsert: true, new: true }
             );
         }
-        console.log('✅ [MongoDB] Store synchronized with MongoDB Atlas collections.');
     } catch (err) {
-        console.error('[MongoDB] Sync error:', err.message);
+        console.error('[MongoDB] Periodic sync error:', err.message);
     }
 }
 
@@ -135,6 +281,7 @@ const db = {
 
     persist,
     syncMongo,
+    loadFromMongo,
 
     // Helper to update streak for a student
     saveStreak(studentId, streakData) {

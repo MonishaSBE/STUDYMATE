@@ -5,6 +5,8 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+const ConnectMongo = require('connect-mongo');
+const MongoStore = ConnectMongo.default || ConnectMongo.MongoStore;
 const { connectDB } = require('./config/mongodb');
 
 const app = express();
@@ -18,14 +20,25 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
+// Persistent MongoDB session store — sessions survive server restarts and inactivity
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://swethamoni2011_db_user:studymate@cluster0.6pzpwqd.mongodb.net/studymate?appName=Cluster0';
+const sessionStore = MongoStore.create({
+    mongoUrl: MONGO_URI,
+    collectionName: 'sessions',
+    ttl: 30 * 24 * 60 * 60, // 30 days
+    autoRemove: 'native'
+});
+
 app.use(session({
     key: 'studymate_session',
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'super_secret_studymate_key',
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Renews 30-day cookie on every user visit
     proxy: true,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24, // 1 day
+        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'

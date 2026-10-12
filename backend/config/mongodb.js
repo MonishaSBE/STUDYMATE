@@ -14,6 +14,14 @@ const connectDB = async () => {
         });
         isConnected = true;
         console.log('✅ [MongoDB] Successfully connected to MongoDB Atlas Database: studymate');
+        try {
+            const db = require('../mockDb');
+            if (typeof db.loadFromMongo === 'function') {
+                await db.loadFromMongo();
+            }
+        } catch (syncErr) {
+            console.error('[MongoDB] Initial loadFromMongo error:', syncErr.message);
+        }
     } catch (err) {
         isConnected = false;
         console.warn('⚠️ [MongoDB] Atlas connection could not be established immediately (' + err.message + ').');
@@ -22,9 +30,15 @@ const connectDB = async () => {
     }
 };
 
-mongoose.connection.on('connected', () => {
+mongoose.connection.on('connected', async () => {
     isConnected = true;
     console.log('✅ [MongoDB] Connection established.');
+    try {
+        const db = require('../mockDb');
+        if (typeof db.loadFromMongo === 'function') {
+            await db.loadFromMongo();
+        }
+    } catch (e) {}
 });
 
 mongoose.connection.on('error', (err) => {

@@ -5,6 +5,8 @@ const fs = require('fs');
 const multer = require('multer');
 const db = require('../mockDb');
 const auth = require('../middleware/authenticate');
+const { Material } = require('../models');
+const { isMongoConnected } = require('../config/mongodb');
 const { fallbackData, isMySqlAvailable, pool } = require('../services/storageAdapter');
 const { UPLOADS_DIR, MAX_FILE_SIZE_BYTES, sanitizeFilename, isValidFileType } = require('../config/storage');
 
@@ -69,6 +71,21 @@ router.get('/books', auth, async (req, res) => {
 // 1. Search & Filter Study Materials & Library Books
 router.get('/', auth, async (req, res) => {
     try {
+        if (isMongoConnected()) {
+            try {
+                const dbMaterials = await Material.find({}).lean();
+                if (dbMaterials && dbMaterials.length > 0) {
+                    dbMaterials.forEach(dm => {
+                        if (!fallbackData.materials.some(m => m.id === dm.id)) {
+                            fallbackData.materials.unshift(dm);
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('[MongoDB] Error loading materials:', err.message);
+            }
+        }
+
         const { search, course_id, subject, resource_type, domain, category, sort } = req.query;
         let materials = [...fallbackData.materials];
 
@@ -205,6 +222,14 @@ router.post('/upload', auth, upload.single('document'), async (req, res) => {
         };
 
         fallbackData.materials.unshift(newMaterial);
+
+        if (isMongoConnected()) {
+            try {
+                await Material.findOneAndUpdate({ id: newMaterial.id }, newMaterial, { upsert: true, new: true });
+            } catch (mongoErr) {
+                console.error('[MongoDB] Error saving Material to Atlas:', mongoErr.message);
+            }
+        }
 
         res.json({
             status: 'success',

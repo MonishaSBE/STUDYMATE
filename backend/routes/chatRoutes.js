@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../mockDb');
 const auth = require('../middleware/authenticate');
+const { Message } = require('../models');
+const { isMongoConnected } = require('../config/mongodb');
 const { fallbackData } = require('../services/storageAdapter');
 const { handleChatAssistantPrompt } = require('../services/aiService');
 const { sendPartnerRequestEmail, sendRequestAcceptedEmail } = require('../services/emailService');
@@ -107,7 +109,7 @@ router.get('/conversations', auth, (req, res) => {
 
 // 2. GET /api/chat/conversations/:id/messages
 // Retrieves chronological message history with participant authorization
-router.get('/conversations/:id/messages', auth, (req, res) => {
+router.get('/conversations/:id/messages', auth, async (req, res) => {
     const convId = Number(req.params.id);
     const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
     if (!studentProfile) return res.status(401).json({ status: 'failure', message: 'Unauthorized' });
@@ -122,6 +124,20 @@ router.get('/conversations/:id/messages', auth, (req, res) => {
     // Authorization: User must be a participant
     if (!conv.participants.includes(myStudentId)) {
         return res.status(403).json({ status: 'failure', message: 'Unauthorized: Not a participant in this conversation' });
+    }
+
+    if (isMongoConnected()) {
+        try {
+            const dbMsgs = await Message.find({ conversation_id: convId }).lean();
+            if (dbMsgs && dbMsgs.length > 0) {
+                const existing = getMessages();
+                dbMsgs.forEach(dm => {
+                    if (!existing.some(m => m.id === dm.id)) {
+                        existing.push(dm);
+                    }
+                });
+            }
+        } catch (e) {}
     }
 
     const allMessages = getMessages();
@@ -156,7 +172,7 @@ router.get('/conversations/:id/messages', auth, (req, res) => {
 
 // 3. POST /api/chat/conversations/:id/messages
 // Sends a new message in an authorized conversation
-router.post('/conversations/:id/messages', auth, (req, res) => {
+router.post('/conversations/:id/messages', auth, async (req, res) => {
     const convId = Number(req.params.id);
     const { content, message_type = 'text' } = req.body;
 
@@ -192,6 +208,14 @@ router.post('/conversations/:id/messages', auth, (req, res) => {
 
     getMessages().push(newMessage);
     conv.updated_at = newMessage.created_at;
+
+    if (isMongoConnected()) {
+        try {
+            await Message.findOneAndUpdate({ id: newMessage.id }, newMessage, { upsert: true, new: true });
+        } catch (mErr) {
+            console.error('[MongoDB] Error saving message to Atlas:', mErr.message);
+        }
+    }
 
     res.json({ status: 'success', data: newMessage });
 });

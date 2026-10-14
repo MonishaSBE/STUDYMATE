@@ -41,10 +41,7 @@
       </div>
     </div>
 
-    <!-- Theme Selector Button -->
-    <button class="theme-toggle-btn" onclick="StudyMateTheme.openThemeModal()" title="Customize StudyMate Theme (Dark, Midnight, Sepia, etc.)">
-      <i class="fa-solid fa-palette"></i> <span class="theme-current-name">Theme</span>
-    </button>
+
     <!-- Zoom Controls -->
     <div class="zoom-controls" title="Adjust application view scale (or use Ctrl + / Ctrl -)">
       <button class="zoom-btn" onclick="StudyMateZoom.zoomOut()" title="Zoom Out (Ctrl -)">−</button>
@@ -436,11 +433,20 @@
               </div>
 
               <!-- Chat Input Bar & Composer -->
+              <div id="chatAttachmentPreview" style="display:none; padding:6px 12px; background:var(--card); border-top:1px solid var(--line); align-items:center; gap:8px; font-size:12px; color:var(--ink-soft);">
+                <i class="fa-solid fa-paperclip" style="color:var(--pin-teal);"></i>
+                <span id="chatAttachmentName" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                <button type="button" onclick="ChatModule.clearAttachment()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--pin-red); padding:0;">✕</button>
+              </div>
               <div class="chat-input-bar">
                 <button type="button" class="chat-ai-help-btn" onclick="ChatModule.openAiDraftModal('general')" title="Ask AI Assistant to draft or polish a message">
                   ✨ Ask AI
                 </button>
-                <textarea id="chatMessageInput" placeholder="Type an academic message... (Press Enter to send)" rows="1" onkeydown="ChatModule.handleKeySend(event)"></textarea>
+                <label for="chatFileInput" class="chat-attach-btn" title="Attach a file, image or PDF">
+                  <i class="fa-solid fa-paperclip"></i>
+                </label>
+                <input type="file" id="chatFileInput" style="display:none;" accept=".pdf,.txt,.docx,.pptx,.png,.jpg,.jpeg,.gif,.webp" onchange="ChatModule.handleFileSelect(event)" />
+                <textarea id="chatMessageInput" placeholder="Type a message or attach a file… (Enter to send)" rows="1" onkeydown="ChatModule.handleKeySend(event)"></textarea>
                 <button type="button" class="btn small" id="chatSendBtn" onclick="ChatModule.sendMessage()">Send</button>
               </div>
             </div>

@@ -98,6 +98,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Load home panel data
         loadDailyChallenge();
         loadHomeConnections();
+
+        // Start notification polling every 5 seconds
+        loadNotifications();
+        setInterval(loadNotifications, 5000);
     } catch (err) {
         console.error(err);
         window.location.href = 'index.html';
@@ -932,24 +936,68 @@ async function submitCornerAi(e) {
 }
 
 async function loadGroups() {
-    GROUPS_CACHE = await api('/groups');
-    document.getElementById('groupList').innerHTML = GROUPS_CACHE.length ? GROUPS_CACHE.map(g => `
-        <div class="card">
-            <h3 style="font-size:16px;">${escapeHtml(g.group_name)}</h3>
-            <p style="font-size:13px;">${escapeHtml(g.description || '')}</p>
-            <button class="btn small teal" onclick="joinGroup('${g.ROWID}')">Join group</button>
-        </div>
-    `).join('') : '<div class="empty-state">No groups yet.</div>';
+    try {
+        GROUPS_CACHE = await api('/groups');
+    } catch(e) {
+        GROUPS_CACHE = [];
+    }
 
-    document.getElementById('notesGroupSelect').innerHTML = '<option value="">Select a group</option>' + 
-        GROUPS_CACHE.map(g => `<option value="${g.ROWID}">${escapeHtml(g.group_name)}</option>`).join('');
+    const groupListEl = document.getElementById('groupList');
+    if (groupListEl) {
+        groupListEl.innerHTML = GROUPS_CACHE.length ? GROUPS_CACHE.map(g => {
+            const memberCount = g.member_count || (g.members ? g.members.length : 0);
+            const maxMembers = g.max_members || 6;
+            const isMember = g.is_member;
+            const isFull = memberCount >= maxMembers;
+            const membersLabel = `${memberCount}/${maxMembers} Members`;
+
+            let actionBtn = '';
+            if (isMember) {
+                // Find conversation_id for this group via STUDENT_ID and group info
+                actionBtn = `
+                    <span class="pill" style="background:#eaf3f2; color:var(--pin-teal); font-size:11px;">✅ Joined</span>
+                    <button class="btn small teal" onclick="openGroupChat('${g.ROWID}')">
+                        <i class="fa-solid fa-comments"></i> Open Group Chat
+                    </button>
+                `;
+            } else if (isFull) {
+                actionBtn = `<button class="btn small secondary" disabled title="Group is full">Group Full</button>`;
+            } else {
+                actionBtn = `<button class="btn small" onclick="joinGroup('${g.ROWID}')">Join Group</button>`;
+            }
+
+            const subjectPill = g.subject ? `<span class="subject-pill" style="font-size:11px;">${escapeHtml(g.subject)}</span>` : '';
+
+            return `
+                <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; border-left:3px solid ${isMember ? 'var(--pin-teal)' : 'var(--line)'}; gap:10px;">
+                    <div>
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:6px;">
+                            <h3 style="font-size:15px; margin:0;">${escapeHtml(g.group_name)}</h3>
+                            <span class="pill" style="font-size:10px; white-space:nowrap;">${membersLabel}</span>
+                        </div>
+                        ${subjectPill}
+                        <p style="font-size:13px; color:var(--ink-soft); margin:6px 0 0;">${escapeHtml(g.description || 'Collaborative study pod')}</p>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-top:8px; border-top:1px dashed var(--line);">
+                        ${actionBtn}
+                    </div>
+                </div>
+            `;
+        }).join('') : '<div class="empty-state"><span style="font-size:28px; display:block; margin-bottom:8px;">📚</span><p>No study groups yet. Create one to get started!</p></div>';
+    }
+
+    const notesGroupSelect = document.getElementById('notesGroupSelect');
+    if (notesGroupSelect) {
+        notesGroupSelect.innerHTML = '<option value="">Select a group</option>' +
+            GROUPS_CACHE.map(g => `<option value="${g.ROWID}">${escapeHtml(g.group_name)}</option>`).join('');
+    }
 
     // Populate Right Column Suggestions
     const groupsListEl = document.getElementById('newlyAddedGroupsList');
     if (groupsListEl && GROUPS_CACHE.length) {
         groupsListEl.innerHTML = GROUPS_CACHE.slice(0, 3).map(g => `
             <div class="mini-suggestion-item" onclick="switchMainTab('groups')">
-                <div class="item-title"><span>${escapeHtml(g.group_name)}</span> <span class="pill" style="font-size:10px;">${g.members ? g.members.length : 1}/${g.max_members || 6}</span></div>
+                <div class="item-title"><span>${escapeHtml(g.group_name)}</span> <span class="pill" style="font-size:10px;">${g.member_count || (g.members ? g.members.length : 0)}/${g.max_members || 6}</span></div>
                 <div class="item-sub">${escapeHtml(g.description || 'Collaborative study pod')}</div>
             </div>
         `).join('');
@@ -958,11 +1006,36 @@ async function loadGroups() {
 
 async function joinGroup(id) {
     try {
-        await api('/groups/' + id + '/join', { method: 'POST', body: JSON.stringify({ student_id: STUDENT_ID }) });
-        showDashToast('Successfully joined the study group!', 'success');
-        loadGroups();
+        const res = await api('/groups/' + id + '/join', { method: 'POST', body: JSON.stringify({ student_id: STUDENT_ID }) });
+        showDashToast('Successfully joined the study group! Opening group chat…', 'success');
+        await loadGroups();
+        // After joining, open the group chat automatically
+        if (res && res.conversation_id) {
+            setTimeout(() => openGroupChat(id, res.conversation_id), 600);
+        } else {
+            openGroupChat(id);
+        }
     } catch(err) {
-        showDashToast(err.message, 'error');
+        showDashToast(err.message || 'Could not join group', 'error');
+    }
+}
+
+async function openGroupChat(groupId, knownConvId) {
+    // Switch to Chat Requests panel -> Conversations tab
+    switchMainTab('requests');
+    if (window.ChatModule) {
+        await ChatModule.loadConversations();
+        // Find the conversation for this group
+        let conv = ChatModule.conversations.find(c => c.type === 'group' && String(c.group_id) === String(groupId));
+        if (!conv && knownConvId) {
+            conv = ChatModule.conversations.find(c => c.id === knownConvId);
+        }
+        if (conv) {
+            ChatModule.switchSubTab('conversations');
+            ChatModule.openConversation(conv.id);
+        } else {
+            ChatModule.switchSubTab('conversations');
+        }
     }
 }
 
@@ -1250,3 +1323,76 @@ window.openNewPartnerRequestModal = async function() {
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
 }
+
+// =============================================
+//   NOTIFICATION BELL FUNCTIONS
+// =============================================
+function toggleNotifDropdown() {
+    const dropdown = document.getElementById('notifDropdown');
+    if (!dropdown) return;
+    const isVisible = dropdown.style.display === 'block';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) loadNotifications();
+    // Close on click outside
+    if (!isVisible) {
+        setTimeout(() => {
+            document.addEventListener('click', function closeNotif(e) {
+                if (!dropdown.contains(e.target) && !document.getElementById('notifBellBtn')?.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                    document.removeEventListener('click', closeNotif);
+                }
+            });
+        }, 0);
+    }
+}
+
+function clearAllNotifs() {
+    const listEl = document.getElementById('notifDropdownList');
+    if (listEl) listEl.innerHTML = '<div class="notif-item empty">No notifications</div>';
+    const badge = document.getElementById('topNotifBadge');
+    if (badge) badge.style.display = 'none';
+}
+
+async function loadNotifications() {
+    try {
+        const requests = await api('/chat/requests/incoming');
+        const pending = (requests || []).filter(r => r.status === 'pending');
+
+        const badge = document.getElementById('topNotifBadge');
+        if (badge) {
+            if (pending.length > 0) {
+                badge.textContent = pending.length;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        const listEl = document.getElementById('notifDropdownList');
+        if (!listEl) return;
+
+        if (pending.length === 0) {
+            listEl.innerHTML = '<div class="notif-item empty">No pending notifications</div>';
+            return;
+        }
+
+        listEl.innerHTML = pending.map(r => `
+            <div class="notif-item" onclick="switchMainTab('requests'); if(window.ChatModule) ChatModule.switchSubTab('incoming'); toggleNotifDropdown();" style="cursor:pointer;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="profile-avatar palette-${r.sender_id % 6}" style="width:34px; height:34px; font-size:13px; flex-shrink:0;">
+                        ${(r.sender_name || 'S').charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:13px; font-weight:600; color:var(--ink);">${escapeHtml(r.sender_name || 'A classmate')}</div>
+                        <div style="font-size:11px; color:var(--ink-soft); margin-top:1px;">sent a study partner request</div>
+                        <div style="font-size:10px; color:var(--pin-teal); margin-top:2px;">${escapeHtml(r.department || '')} ${r.department && r.academic_year ? '·' : ''} ${escapeHtml(r.academic_year || '')}</div>
+                    </div>
+                    <span style="width:8px; height:8px; background:var(--pin-teal); border-radius:50%; flex-shrink:0;"></span>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {
+        // silent fail
+    }
+}
+

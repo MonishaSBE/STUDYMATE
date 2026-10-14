@@ -12,6 +12,7 @@ window.ChatModule = {
     pollingInterval: null,
     currentSubTab: 'conversations',
     isSending: false,
+    selectedFile: null,
 
     async init() {
         this.setupEventListeners();
@@ -139,27 +140,40 @@ window.ChatModule = {
 
         listEl.innerHTML = filtered.map(c => {
             const isSelected = c.id === this.activeConversationId;
-            const initial = (c.partner?.name || 'S').charAt(0).toUpperCase();
-            const lastMsgPreview = c.last_message ? escapeHtml(c.last_message.content) : '<em>No messages yet · Say hello!</em>';
+            const isGroup = c.type === 'group';
+            const avatarContent = isGroup ? '👥' : (c.partner?.name || 'S').charAt(0).toUpperCase();
+            const avatarPalette = isGroup ? '' : `palette-${(c.partner?.student_id || 1) % 6}`;
+            const displayName = isGroup
+                ? `👥 ${escapeHtml(c.partner?.name || 'Study Group')}`
+                : escapeHtml(c.partner?.name || 'Study Partner');
+            const lastMsgContent = c.last_message
+                ? (c.last_message.file_url
+                    ? `📎 ${escapeHtml(c.last_message.file_name || 'Attachment')}`
+                    : escapeHtml(c.last_message.content))
+                : '<em>No messages yet · Say hello!</em>';
             const timePreview = c.last_message ? this.formatTime(c.last_message.created_at) : '';
             const unreadBadge = c.unread_count > 0 ? `<span class="chat-conv-unread">${c.unread_count}</span>` : '';
-            const statusTicks = c.last_message && c.last_message.sender_id === STUDENT_ID ? 
-                `<span class="chat-status-tick ${c.last_message.status}">${c.last_message.status === 'read' ? '✓✓' : '✓'}</span> ` : '';
+            const statusTicks = !isGroup && c.last_message && c.last_message.sender_id === STUDENT_ID
+                ? `<span class="chat-status-tick ${c.last_message.status}">${c.last_message.status === 'read' ? '✓✓' : '✓'}</span> ` : '';
+            const subLabel = isGroup
+                ? escapeHtml(c.partner?.department || '1 Member')
+                : escapeHtml(c.partner?.department || '');
 
             return `
                 <div class="chat-conv-item ${isSelected ? 'active' : ''}" onclick="ChatModule.openConversation(${c.id})">
-                    <div class="profile-avatar palette-${(c.partner?.student_id || 1) % 6}" style="width:42px; height:42px; font-size:15px; flex-shrink:0;">
-                        ${initial}
+                    <div class="profile-avatar ${avatarPalette}" style="width:42px; height:42px; font-size:${isGroup ? 20 : 15}px; flex-shrink:0; ${isGroup ? 'background:var(--pin-teal) !important; color:#fff; display:flex; align-items:center; justify-content:center;' : ''}">
+                        ${avatarContent}
                     </div>
                     <div class="chat-conv-info">
                         <div class="chat-conv-top">
-                            <span class="chat-conv-name">${escapeHtml(c.partner?.name || 'Study Partner')}</span>
+                            <span class="chat-conv-name">${displayName}</span>
                             <span class="chat-conv-time">${timePreview}</span>
                         </div>
                         <div class="chat-conv-bottom">
-                            <span class="chat-conv-last-msg">${statusTicks}${lastMsgPreview}</span>
+                            <span class="chat-conv-last-msg" style="color:var(--ink-soft); font-size:11px;">${subLabel}</span>
                             ${unreadBadge}
                         </div>
+                        <div style="font-size:11px; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:160px;">${statusTicks}${lastMsgContent}</div>
                     </div>
                 </div>
             `;
@@ -196,15 +210,29 @@ window.ChatModule = {
             const avatarEl = document.getElementById('activePartnerAvatar');
             const nameEl = document.getElementById('activePartnerName');
             const statusEl = document.getElementById('activePartnerStatus');
+            const isGroup = conv && conv.type === 'group';
 
             if (avatarEl) {
-                avatarEl.textContent = (this.activePartner.name || 'S').charAt(0).toUpperCase();
-                avatarEl.className = `profile-avatar palette-${(this.activePartner.student_id || 1) % 6}`;
+                if (isGroup) {
+                    avatarEl.textContent = '👥';
+                    avatarEl.className = 'profile-avatar';
+                    avatarEl.style.background = 'var(--pin-teal)';
+                    avatarEl.style.color = '#fff';
+                    avatarEl.style.fontSize = '20px';
+                } else {
+                    avatarEl.textContent = (this.activePartner.name || 'S').charAt(0).toUpperCase();
+                    avatarEl.className = `profile-avatar palette-${(this.activePartner.student_id || 1) % 6}`;
+                    avatarEl.style = '';
+                }
             }
-            if (nameEl) nameEl.textContent = this.activePartner.name || 'Study Partner';
+            if (nameEl) nameEl.textContent = this.activePartner.name || (isGroup ? 'Study Group' : 'Study Partner');
             if (statusEl) {
-                const dept = this.activePartner.department ? `${this.activePartner.department} · ` : '';
-                statusEl.textContent = `${dept}Active Study Partner`;
+                if (isGroup) {
+                    statusEl.textContent = `${this.activePartner.department || 'Group Chat'} · All members can chat`;
+                } else {
+                    const dept = this.activePartner.department ? `${this.activePartner.department} · ` : '';
+                    statusEl.textContent = `${dept}Active Study Partner`;
+                }
             }
         }
 
@@ -265,14 +293,33 @@ window.ChatModule = {
         stream.innerHTML = this.activeMessages.map(msg => {
             const isMine = msg.sender_id === STUDENT_ID;
             const timeStr = this.formatTime(msg.created_at);
-            const statusIndicator = isMine ? 
-                `<span class="msg-status-mark ${msg.status}">${msg.status === 'read' ? '✓✓' : '✓'}</span>` : '';
+            const statusIndicator = isMine
+                ? `<span class="msg-status-mark ${msg.status}">${msg.status === 'read' ? '✓✓' : '✓'}</span>` : '';
+            const isGroupConv = this.conversations.find(c => c.id === this.activeConversationId)?.type === 'group';
+
+            let attachmentHtml = '';
+            if (msg.file_url) {
+                const imgExts = ['.png','.jpg','.jpeg','.gif','.webp'];
+                const isImg = imgExts.some(ext => (msg.file_url || '').toLowerCase().endsWith(ext));
+                if (isImg) {
+                    const API_BASE = window.STUDYMATE_API_BASE ? window.STUDYMATE_API_BASE.replace('/api','') : '';
+                    attachmentHtml = `<div style="margin-top:6px;"><img src="${API_BASE}${escapeHtml(msg.file_url)}" alt="${escapeHtml(msg.file_name || 'Image')}" style="max-width:220px; max-height:180px; border-radius:8px; display:block; cursor:pointer;" onclick="window.open('${API_BASE}${escapeHtml(msg.file_url)}','_blank')" /></div>`;
+                } else {
+                    const API_BASE = window.STUDYMATE_API_BASE ? window.STUDYMATE_API_BASE.replace('/api','') : '';
+                    const sizeKb = msg.file_size ? ` (${Math.round(msg.file_size/1024)} KB)` : '';
+                    attachmentHtml = `<div style="margin-top:6px; display:inline-flex; align-items:center; gap:6px; background:rgba(0,0,0,0.06); padding:6px 10px; border-radius:6px;"><i class="fa-solid fa-file" style="color:var(--pin-teal);"></i><a href="${API_BASE}${escapeHtml(msg.file_url)}" target="_blank" download style="color:var(--pin-teal); font-size:12px; text-decoration:none; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(msg.file_name || 'Download File')}${sizeKb}</a></div>`;
+                }
+            }
+
+            const textHtml = (msg.message_type === 'image' || (msg.file_url && !msg.content)) ? '' :
+                `<div class="chat-msg-text">${escapeHtml(msg.content || '')}</div>`;
 
             return `
                 <div class="chat-msg-row ${isMine ? 'sent' : 'received'}">
                     <div class="chat-bubble">
-                        ${!isMine ? `<span class="chat-sender-label">${escapeHtml(msg.sender_name || 'Partner')}</span>` : ''}
-                        <div class="chat-msg-text">${escapeHtml(msg.content)}</div>
+                        ${(!isMine && isGroupConv) ? `<span class="chat-sender-label" style="font-size:10px; font-weight:600; color:var(--pin-teal); display:block; margin-bottom:2px;">${escapeHtml(msg.sender_name || 'Member')}</span>` : ''}
+                        ${textHtml}
+                        ${attachmentHtml}
                         <div class="chat-msg-meta">
                             <span class="chat-msg-time">${timeStr}</span>
                             ${statusIndicator}
@@ -293,12 +340,31 @@ window.ChatModule = {
         }
     },
 
+    // File attachment handlers
+    handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        this.selectedFile = file;
+        const preview = document.getElementById('chatAttachmentPreview');
+        const nameEl = document.getElementById('chatAttachmentName');
+        if (preview) preview.style.display = 'flex';
+        if (nameEl) nameEl.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+    },
+
+    clearAttachment() {
+        this.selectedFile = null;
+        const fileInput = document.getElementById('chatFileInput');
+        if (fileInput) fileInput.value = '';
+        const preview = document.getElementById('chatAttachmentPreview');
+        if (preview) preview.style.display = 'none';
+    },
+
     async sendMessage() {
         if (this.isSending || !this.activeConversationId) return;
 
         const input = document.getElementById('chatMessageInput');
         const content = input?.value?.trim();
-        if (!content) return;
+        if (!content && !this.selectedFile) return;
 
         const sendBtn = document.getElementById('chatSendBtn');
         this.isSending = true;
@@ -308,17 +374,40 @@ window.ChatModule = {
         }
 
         try {
-            const res = await api(`/chat/conversations/${this.activeConversationId}/messages`, {
-                method: 'POST',
-                body: JSON.stringify({ content })
-            });
+            let res;
+            if (this.selectedFile) {
+                // Send as multipart/form-data for file upload
+                const formData = new FormData();
+                formData.append('attachment', this.selectedFile);
+                if (content) formData.append('content', content);
+
+                const apiBase = window.STUDYMATE_API_BASE || '/api';
+                const fetchRes = await fetch(`${apiBase}/chat/conversations/${this.activeConversationId}/messages`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                const json = await fetchRes.json();
+                if (!fetchRes.ok) throw new Error(json.message || 'Upload failed');
+                res = json.data || json;
+                this.clearAttachment();
+            } else {
+                res = await api(`/chat/conversations/${this.activeConversationId}/messages`, {
+                    method: 'POST',
+                    body: JSON.stringify({ content })
+                });
+            }
 
             if (input) input.value = '';
             this.activeMessages.push(res);
             this.renderMessageStream();
             await this.loadConversationsSilently();
         } catch (err) {
-            alert('Failed to send message: ' + err.message);
+            if (window.showDashToast) {
+                window.showDashToast('Failed to send: ' + err.message, 'error');
+            } else {
+                alert('Failed to send message: ' + err.message);
+            }
         } finally {
             this.isSending = false;
             if (sendBtn) {
@@ -578,17 +667,18 @@ window.ChatModule = {
             if (loadingEl) loadingEl.remove();
 
             if (stream) {
+                const formattedAiResponse = typeof formatMarkdown === 'function' ? formatMarkdown(res.response) : res.response.replace(/\n/g, '<br>');
                 stream.innerHTML += `
                     <div class="chat-msg-row received">
                         <div class="profile-avatar palette-0" style="width:30px; height:30px; font-size:11px;">AI</div>
-                        <div class="chat-bubble" style="max-width:85%;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <strong style="font-size:12px; color:var(--pin-teal);">StudyMate Assistant (${escapeHtml(res.provider || 'AI')})</strong>
+                        <div class="chat-bubble" style="max-width:88%;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <strong style="font-size:12px; color:var(--pin-teal);">StudyMate AI (${escapeHtml(res.provider || 'AI')})</strong>
                             </div>
-                            <div class="chat-msg-text" style="white-space:pre-wrap; line-height:1.5;">${escapeHtml(res.response)}</div>
-                            <div style="margin-top:8px; display:flex; gap:6px;">
+                            <div class="chat-msg-text markdown-body" style="line-height:1.7; font-size:13px;">${formattedAiResponse}</div>
+                            <div style="margin-top:10px; display:flex; gap:6px;">
                                 <button class="btn small secondary" style="padding:2px 8px; font-size:10px;" onclick="ChatModule.copyAiResponse(this)">Copy</button>
-                                <button class="btn small teal" style="padding:2px 8px; font-size:10px;" onclick="ChatModule.insertAiIntoActiveChat(decodeURIComponent('${encodeURIComponent(res.response)}'))">Insert into Active Chat</button>
+                                <button class="btn small teal" style="padding:2px 8px; font-size:10px;" onclick="ChatModule.insertAiIntoActiveChat(decodeURIComponent('${encodeURIComponent(res.response)}'))">Insert into Chat</button>
                             </div>
                         </div>
                     </div>

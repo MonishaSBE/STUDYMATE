@@ -156,14 +156,95 @@ window.AiAssistantModule = {
 
 function formatMarkdown(text) {
     if (!text) return '';
+
+    // Strip remaining LaTeX dollar-sign math notation (inline & block)
+    text = text
+        .replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => m.trim())
+        .replace(/\$((?:[^$\\]|\\.)*?)\$/g, '$1')
+        .replace(/\\to\b/g, '->')
+        .replace(/\\rightarrow\b/g, '->')
+        .replace(/\\leftarrow\b/g, '<-')
+        .replace(/\\le\b/g, '<=')
+        .replace(/\\ge\b/g, '>=')
+        .replace(/\\neq\b/g, '!=')
+        .replace(/\\cdot\b/g, ' · ')
+        .replace(/\\times\b/g, ' × ')
+        .replace(/\\log\b/g, 'log')
+        .replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)')
+        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)');
+
+    // Process code blocks (``` ... ```) BEFORE line-by-line processing
+    text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) => {
+        return `<pre class="ai-code-block"><code>${escapeHtmlInline(code.trim())}</code></pre>`;
+    });
+    // Inline code `code`
+    text = text.replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>');
+
+    const lines = text.split('\n');
+    let html = '';
+    let inList = false;
+    let inOrderedList = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Skip pre-processed code blocks
+        if (line.startsWith('<pre ')) { html += line + '\n'; continue; }
+
+        // Headings
+        if (/^### (.+)/.test(line)) { if (inList) { html += '</ul>'; inList = false; } if (inOrderedList) { html += '</ol>'; inOrderedList = false; } html += `<h3 style="font-size:14px; font-weight:700; color:var(--ink); margin:14px 0 6px;">${inline(line.replace(/^### /, ''))}</h3>`; continue; }
+        if (/^## (.+)/.test(line)) { if (inList) { html += '</ul>'; inList = false; } if (inOrderedList) { html += '</ol>'; inOrderedList = false; } html += `<h2 style="font-size:16px; font-weight:700; color:var(--ink); margin:16px 0 8px;">${inline(line.replace(/^## /, ''))}</h2>`; continue; }
+        if (/^# (.+)/.test(line)) { if (inList) { html += '</ul>'; inList = false; } if (inOrderedList) { html += '</ol>'; inOrderedList = false; } html += `<h1 style="font-size:18px; font-weight:700; color:var(--ink); margin:18px 0 10px;">${inline(line.replace(/^# /, ''))}</h1>`; continue; }
+
+        // Horizontal rule
+        if (/^---+$/.test(line.trim())) { html += '<hr style="border:none; border-top:1px solid var(--line); margin:12px 0;" />'; continue; }
+
+        // Blockquote
+        if (/^> (.+)/.test(line)) { html += `<blockquote class="ai-quote">${inline(line.replace(/^> /, ''))}</blockquote>`; continue; }
+
+        // Ordered list
+        const olMatch = line.match(/^(\d+)\. (.+)/);
+        if (olMatch) {
+            if (inList) { html += '</ul>'; inList = false; }
+            if (!inOrderedList) { html += '<ol style="margin:6px 0 6px 18px; padding:0;">'; inOrderedList = true; }
+            html += `<li style="margin-bottom:4px; line-height:1.6;">${inline(olMatch[2])}</li>`;
+            continue;
+        }
+
+        // Unordered list
+        if (/^[-*] (.+)/.test(line)) {
+            if (inOrderedList) { html += '</ol>'; inOrderedList = false; }
+            if (!inList) { html += '<ul style="margin:6px 0 6px 18px; padding:0; list-style:disc;">'; inList = true; }
+            html += `<li style="margin-bottom:4px; line-height:1.6;">${inline(line.replace(/^[-*] /, ''))}</li>`;
+            continue;
+        }
+
+        // Close open lists
+        if (inList) { html += '</ul>'; inList = false; }
+        if (inOrderedList) { html += '</ol>'; inOrderedList = false; }
+
+        // Empty line
+        if (line.trim() === '') { html += '<br>'; continue; }
+
+        // Regular paragraph
+        html += `<p style="margin:4px 0; line-height:1.7;">${inline(line)}</p>`;
+    }
+
+    if (inList) html += '</ul>';
+    if (inOrderedList) html += '</ol>';
+
+    return html;
+}
+
+function inline(text) {
     return text
-        .replace(/^### (.*$)/gim, '<h3 style="font-size:15px; margin:12px 0 6px;">$1</h3>')
-        .replace(/^## (.*$)/gim, '<h2 style="font-size:17px; margin:14px 0 8px;">$1</h2>')
-        .replace(/^# (.*$)/gim, '<h1 style="font-size:19px; margin:16px 0 10px;">$1</h1>')
-        .replace(/^\> (.*$)/gim, '<blockquote class="ai-quote">$1</blockquote>')
-        .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-        .replace(/^\* (.*$)/gim, '<li>$1</li>')
-        .replace(/^\- (.*$)/gim, '<li>$1</li>')
-        .replace(/\n/gim, '<br>');
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/__(.+?)__/g, '<strong>$1</strong>')
+        .replace(/_(.+?)_/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>');
+}
+
+function escapeHtmlInline(str) {
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }

@@ -19,6 +19,27 @@ const { sendPartnerRequestEmail, sendRequestAcceptedEmail } = require('../servic
  * - Integrated AI Study Assistant within Chat
  */
 
+const path = require('path');
+const multer = require('multer');
+const { UPLOADS_DIR, MAX_FILE_SIZE_BYTES, sanitizeFilename, isValidFileType } = require('../config/storage');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => cb(null, Date.now() + '_' + sanitizeFilename(file.originalname))
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: MAX_FILE_SIZE_BYTES },
+    fileFilter: (req, file, cb) => {
+        if (isValidFileType(file.originalname, file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Unsupported file format. Permitted: PDF, TXT, DOCX, PPTX, PNG, JPG, JPEG'));
+        }
+    }
+});
+
 // Helper: Ensure conversations array exists
 function getConversations() {
     if (!fallbackData.conversations) fallbackData.conversations = [];
@@ -31,7 +52,7 @@ function getMessages() {
 }
 
 // 1. GET /api/chat/conversations
-// Returns all conversations for the authenticated student with last message and unread count
+// Returns all conversations (both 1-to-1 direct and study group rooms) for current student
 router.get('/conversations', auth, (req, res) => {
     const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
     if (!studentProfile) {
@@ -39,7 +60,7 @@ router.get('/conversations', auth, (req, res) => {
     }
     const myStudentId = studentProfile.id;
 
-    // Also auto-create direct conversations for any accepted chat_requests if not yet created
+    // Auto-create direct conversations for any accepted chat requests
     const acceptedRequests = db.requests.filter(r => 
         r.status === 'accepted' && (r.sender_id === myStudentId || r.receiver_id === myStudentId)
     );
@@ -63,12 +84,37 @@ router.get('/conversations', auth, (req, res) => {
         }
     });
 
-    const myConvs = convs.filter(c => c.participants.includes(myStudentId));
+    // Auto-sync any Study Groups that current user is a member of into conversations
+    (db.groups || []).forEach(g => {
+        if (g.members && g.members.includes(myStudentId)) {
+            let groupConv = convs.find(c => c.type === 'group' && String(c.group_id) === String(g.ROWID));
+            if (!groupConv) {
+                groupConv = {
+                    id: fallbackData.nextId++,
+                    type: 'group',
+                    group_id: g.ROWID,
+                    title: g.group_name,
+                    description: g.description,
+                    participants: [...g.members],
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                convs.push(groupConv);
+            } else {
+                if (!groupConv.participants.includes(myStudentId)) {
+                    groupConv.participants.push(myStudentId);
+                }
+            }
+        }
+    });
+
+    const myConvs = convs.filter(c => c.participants && c.participants.includes(myStudentId));
     const allMessages = getMessages();
 
     const enriched = myConvs.map(c => {
-        const otherId = c.participants.find(pId => pId !== myStudentId);
-        const otherProfile = db.profiles.find(p => p.id === otherId);
+        const isGroup = c.type === 'group';
+        const otherId = isGroup ? null : c.participants.find(pId => pId !== myStudentId);
+        const otherProfile = isGroup ? null : db.profiles.find(p => p.id === otherId);
 
         // Get messages for this conversation
         const convMessages = allMessages.filter(m => m.conversation_id === c.id);
@@ -80,8 +126,19 @@ router.get('/conversations', auth, (req, res) => {
 
         return {
             id: c.id,
-            type: c.type,
-            partner: {
+            type: c.type || 'direct',
+            group_id: c.group_id || null,
+            title: isGroup ? (c.title || 'Study Group') : (otherProfile ? otherProfile.name : `Student #${otherId}`),
+            description: c.description || '',
+            member_count: isGroup ? (c.participants ? c.participants.length : 1) : 2,
+            partner: isGroup ? {
+                student_id: null,
+                name: c.title || 'Study Group Pod',
+                department: `${(c.participants || []).length} Members`,
+                academic_year: 'Study Group',
+                available_time: '',
+                subjects: []
+            } : {
                 student_id: otherId,
                 name: otherProfile ? otherProfile.name : `Student #${otherId}`,
                 department: otherProfile ? otherProfile.department : '',
@@ -93,6 +150,8 @@ router.get('/conversations', auth, (req, res) => {
                 content: lastMsg.content,
                 sender_id: lastMsg.sender_id,
                 sender_name: lastMsg.sender_name,
+                file_url: lastMsg.file_url || null,
+                file_name: lastMsg.file_name || null,
                 created_at: lastMsg.created_at,
                 status: lastMsg.status
             } : null,
@@ -151,19 +210,30 @@ router.get('/conversations/:id/messages', auth, async (req, res) => {
         }
     });
 
-    const otherId = conv.participants.find(pId => pId !== myStudentId);
-    const otherProfile = db.profiles.find(p => p.id === otherId);
+    const isGroup = conv.type === 'group';
+    const otherId = isGroup ? null : conv.participants.find(pId => pId !== myStudentId);
+    const otherProfile = isGroup ? null : db.profiles.find(p => p.id === otherId);
 
     res.json({
         status: 'success',
         data: {
             conversation_id: convId,
-            partner: {
+            type: conv.type || 'direct',
+            title: isGroup ? conv.title : (otherProfile ? otherProfile.name : `Student #${otherId}`),
+            partner: isGroup ? {
+                student_id: null,
+                name: conv.title || 'Study Group Pod',
+                department: `${(conv.participants || []).length} Members`,
+                academic_year: 'Study Group',
+                available_time: '',
+                is_group: true
+            } : {
                 student_id: otherId,
                 name: otherProfile ? otherProfile.name : `Student #${otherId}`,
                 department: otherProfile ? otherProfile.department : '',
                 academic_year: otherProfile ? otherProfile.academic_year : '',
-                available_time: otherProfile ? otherProfile.available_time : ''
+                available_time: otherProfile ? otherProfile.available_time : '',
+                is_group: false
             },
             messages: convMessages
         }
@@ -171,13 +241,14 @@ router.get('/conversations/:id/messages', auth, async (req, res) => {
 });
 
 // 3. POST /api/chat/conversations/:id/messages
-// Sends a new message in an authorized conversation
-router.post('/conversations/:id/messages', auth, async (req, res) => {
+// Sends a new message (text or file attachment) in an authorized conversation
+router.post('/conversations/:id/messages', auth, upload.single('attachment'), async (req, res) => {
     const convId = Number(req.params.id);
-    const { content, message_type = 'text' } = req.body;
+    let content = (req.body.content || '').trim();
+    const file = req.file;
 
-    if (!content || !content.trim()) {
-        return res.status(400).json({ status: 'failure', message: 'Message content is required' });
+    if (!content && !file) {
+        return res.status(400).json({ status: 'failure', message: 'Message content or file attachment is required' });
     }
 
     const studentProfile = db.profiles.find(p => p.user_id === req.session.userId);
@@ -195,13 +266,36 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
         return res.status(403).json({ status: 'failure', message: 'Unauthorized: Cannot send messages to conversations you do not belong to' });
     }
 
+    let messageType = 'text';
+    let fileUrl = null;
+    let fileName = null;
+    let fileSize = 0;
+
+    if (file) {
+        fileName = file.originalname;
+        fileUrl = '/uploads/' + file.filename;
+        fileSize = file.size;
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) {
+            messageType = 'image';
+        } else {
+            messageType = 'file';
+        }
+        if (!content) {
+            content = file.originalname;
+        }
+    }
+
     const newMessage = {
         id: fallbackData.nextId++,
         conversation_id: convId,
         sender_id: myStudentId,
         sender_name: studentProfile.name || req.session.email.split('@')[0],
-        content: content.trim(),
-        message_type,
+        content: content,
+        message_type: messageType,
+        file_url: fileUrl,
+        file_name: fileName,
+        file_size: fileSize,
         status: 'sent',
         created_at: new Date().toISOString()
     };

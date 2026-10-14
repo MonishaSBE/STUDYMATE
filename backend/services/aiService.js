@@ -329,7 +329,7 @@ ORDER BY avg_salary DESC;
 \`\`\`
 
 #### 6. High-Yield Exam Points
-* **B-Trees vs B+ Trees**: B+ trees store all data records in leaf nodes connected as a linked list, making range queries significantly faster ($O(\\log n)$ lookup + sequential scan).
+* **B-Trees vs B+ Trees**: B+ trees store all data records in leaf nodes connected as a linked list, making range queries significantly faster (O(log n) lookup + sequential scan).
 * **Clustered vs Non-Clustered Index**: A table can have only one clustered index (physically sorts rows), but multiple non-clustered indexes.`;
     }
 
@@ -348,8 +348,8 @@ The OS is an intermediary between bare computer hardware and user software. Its 
 * **FCFS (First-Come, First-Served)**: Non-preemptive; susceptible to the *Convoy Effect*.
 * **SJF (Shortest Job First)**: Optimal minimum average waiting time. Preemptive version is **SRTF** (Shortest Remaining Time First).
 * **Round Robin (RR)**: Preemptive scheduling designed for time-sharing systems using fixed time quantums.
-  * Small quantum $\\to$ high context switching overhead.
-  * Large quantum $\\to$ degrades to FCFS.
+  * Small quantum → high context switching overhead.
+  * Large quantum → degrades to FCFS.
 
 #### 4. The Critical Section Problem & Semaphores
 A critical section occurs when concurrent threads access shared state.
@@ -357,7 +357,7 @@ A critical section occurs when concurrent threads access shared state.
 * **Progress**: If no thread is in the critical section, selection cannot be postponed indefinitely.
 * **Bounded Waiting**: Bound on how many times other threads can enter before a requesting thread is served.
 * **Semaphores**:
-  * \`wait(S)\` / \`P(S)\`: Decrements counter. Blocks if $S \\le 0$.
+  * \`wait(S)\` / \`P(S)\`: Decrements counter. Blocks if S <= 0.
   * \`signal(S)\` / \`V(S)\`: Increments counter and unblocks waiting thread.
 
 #### 5. Deadlock & The 4 Coffman Conditions
@@ -382,10 +382,10 @@ Deadlock occurs when processes are permanently blocked awaiting resources held b
 1. **Application Layer**: User network interfaces (HTTP, DNS, SMTP, FTP).
 2. **Presentation Layer**: Data formatting, serialization, encryption (SSL/TLS), and compression.
 3. **Session Layer**: Manages dialogues and synchronization tokens between end-points.
-4. **Transport Layer**: End-to-end communication, reliability, and multiplexing (TCP, UDP). PDU: *Segment*.
-5. **Network Layer**: Logical addressing, subnet routing, packet forwarding (IP, ICMP, OSPF, BGP). PDU: *Packet*.
-6. **Data Link Layer**: Node-to-node framing, MAC addressing, error detection (Ethernet, Wi-Fi). PDU: *Frame*.
-7. **Physical Layer**: Bit transmission over physical transmission medium (cables, radio waves). PDU: *Bits*.
+4. **Transport Layer**: End-to-end communication, reliability, and multiplexing (TCP, UDP). PDU: Segment.
+5. **Network Layer**: Logical addressing, subnet routing, packet forwarding (IP, ICMP, OSPF, BGP). PDU: Packet.
+6. **Data Link Layer**: Node-to-node framing, MAC addressing, error detection (Ethernet, Wi-Fi). PDU: Frame.
+7. **Physical Layer**: Bit transmission over physical transmission medium (cables, radio waves). PDU: Bits.
 
 #### 2. TCP vs. UDP Protocol Comparison
 | Parameter | TCP (Transmission Control Protocol) | UDP (User Datagram Protocol) |
@@ -397,15 +397,15 @@ Deadlock occurs when processes are permanently blocked awaiting resources held b
 | **Use Cases** | Web (HTTP), Email (SMTP), File transfer | Video streaming, VoIP, Gaming, DNS queries |
 
 #### 3. TCP 3-Way Handshake
-1. **Client $\\to$ Server**: \`SYN\` (Synchronize sequence number $X$).
-2. **Server $\\to$ Client**: \`SYN-ACK\` (Acknowledge $X+1$, own sequence number $Y$).
-3. **Client $\\to$ Server**: \`ACK\` (Acknowledge $Y+1$). Connection established!
+1. **Client → Server**: \`SYN\` (Synchronize sequence number X).
+2. **Server → Client**: \`SYN-ACK\` (Acknowledge X + 1, own sequence number Y).
+3. **Client → Server**: \`ACK\` (Acknowledge Y + 1). Connection established!
 
 #### 4. Subnetting & CIDR (Classless Inter-Domain Routing)
 * Subnet masks partition 32-bit IPv4 addresses into **Network ID** and **Host ID**.
-* For a \`/24\` subnet ($255.255.255.0$):
-  * Total IP addresses = $2^{(32 - 24)} = 2^8 = 256$.
-  * Usable host addresses = $256 - 2 = 254$ (Network address and Broadcast address reserved).`;
+* For a \`/24\` subnet (255.255.255.0):
+  * Total IP addresses = 2^(32 - 24) = 2^8 = 256.
+  * Usable host addresses = 256 - 2 = 254 (Network address and Broadcast address reserved).`;
     }
 
     // 4. Data Structures & Algorithms (DSA)
@@ -413,18 +413,18 @@ Deadlock occurs when processes are permanently blocked awaiting resources held b
         return `### ⚡ Data Structures & Algorithms (DSA) — High-Yield Mastery
 
 #### 1. Asymptotic Complexity (Big-O Cheat Sheet)
-* $O(1)$: Constant time (Array index access, Hash map get/put average).
-* $O(\\log n)$: Logarithmic time (Binary Search, Balanced BST lookup).
-* $O(n)$: Linear time (Unsorted array scan, Linked List traversal).
-* $O(n \\log n)$: Linearithmic time (Merge Sort, Heap Sort, Quick Sort average).
-* $O(n^2)$: Quadratic time (Nested loops, Bubble Sort, Insertion Sort).
+* O(1): Constant time (Array index access, Hash map get/put average).
+* O(log n): Logarithmic time (Binary Search, Balanced BST lookup).
+* O(n): Linear time (Unsorted array scan, Linked List traversal).
+* O(n log n): Linearithmic time (Merge Sort, Heap Sort, Quick Sort average).
+* O(n²): Quadratic time (Nested loops, Bubble Sort, Insertion Sort).
 
 #### 2. Core Data Structures Comparison
-* **Arrays**: Contiguous memory, $O(1)$ random access, but $O(n)$ insertion/deletion.
-* **Linked Lists**: Dynamic memory nodes, $O(1)$ insertion at known pointer, but $O(n)$ search (no indexing).
-* **Stack**: $LIFO$ (Last In, First Out) — used in recursion call stack, expression evaluation, DFS.
-* **Queue**: $FIFO$ (First In, First Out) — used in CPU scheduling, BFS traversal, buffer caches.
-* **Binary Search Tree (BST)**: Left child $<$ Parent $<$ Right child. Search/Insert average $O(\\log n)$, degrades to $O(n)$ if unbalanced (solved by AVL/Red-Black Trees).
+* **Arrays**: Contiguous memory, O(1) random access, but O(n) insertion/deletion.
+* **Linked Lists**: Dynamic memory nodes, O(1) insertion at known pointer, but O(n) search (no indexing).
+* **Stack**: LIFO (Last In, First Out) — used in recursion call stack, expression evaluation, DFS.
+* **Queue**: FIFO (First In, First Out) — used in CPU scheduling, BFS traversal, buffer caches.
+* **Binary Search Tree (BST)**: Left child < Parent < Right child. Search/Insert average O(log n), degrades to O(n) if unbalanced (solved by AVL/Red-Black Trees).
 
 #### 3. Standard Binary Search Algorithm
 \`\`\`javascript
@@ -510,21 +510,43 @@ async function handleChatAssistantPrompt(promptText, mode = 'study_help', userSu
 
     if (isConfigured) {
         let systemContext = '';
+        const cleanTextInstruction = `IMPORTANT FORMATTING RULES: 
+- Write in clean, plain English. Do NOT use LaTeX math notation (no dollar signs like $x$, no \\to, \\le, \\ge, \\cdot, \\times, \\frac etc.). 
+- Instead of LaTeX, write math in plain text: use '->' instead of '\\to', use '<=' instead of '\\le', write fractions as 'a/b', write 'O(log n)' not '$O(\\log n)$'.
+- Use markdown headers (### Topic), bold (**text**), bullet points (- item), and numbered lists (1. item) for structure.
+- Keep responses concise, well-organized, and easy to read for university students.`;
+
         if (mode === 'draft_intro') {
-            systemContext = `You are an academic communication helper for university students. Draft a warm, respectful, and concise study partner introductory message (2-3 sentences) proposing collaboration. The user context is: ${userSubject}.`;
+            systemContext = `You are an academic communication helper for university students. Draft a warm, respectful, and concise study partner introductory message (2-3 sentences) proposing collaboration. The user context is: ${userSubject}. ${cleanTextInstruction}`;
         } else if (mode === 'draft_schedule') {
-            systemContext = `You are a student collaboration assistant. Draft a polite message proposing a study session time and agenda for exam preparation in ${userSubject}.`;
+            systemContext = `You are a student collaboration assistant. Draft a polite message proposing a study session time and agenda for exam preparation in ${userSubject}. ${cleanTextInstruction}`;
         } else if (mode === 'study_plan') {
-            systemContext = `You are an academic coach. Provide a structured, realistic study session plan or topic breakdown for ${userSubject}.`;
+            systemContext = `You are an academic coach. Provide a structured, realistic study session plan or topic breakdown for ${userSubject}. ${cleanTextInstruction}`;
         } else {
-            systemContext = `You are StudyMate AI Study Assistant, an expert academic tutor for university students in ${userSubject}. Explain concepts clearly with examples, clarify doubts, explain programming or algorithmic principles concisely with clear formatting, markdown tables, and code blocks where applicable.`;
+            systemContext = `You are StudyMate AI Study Assistant, an expert academic tutor for university students in ${userSubject}. Explain concepts clearly with examples. Use plain text, not LaTeX. ${cleanTextInstruction}`;
         }
 
         const fullPrompt = `${systemContext}\n\nStudent Query: ${promptText}`;
         const externalResponse = await callGeminiApi(fullPrompt);
         if (externalResponse) {
+            // Post-process: remove any stray LaTeX artifacts the LLM might still include
+            const cleaned = externalResponse
+                .replace(/\$\$[\s\S]*?\$\$/g, match => match.replace(/\$\$/g, '').trim())
+                .replace(/\$((?:[^$\\]|\\.)*?)\$/g, '$1')
+                .replace(/\\to\b/g, '->')
+                .replace(/\\rightarrow\b/g, '->')
+                .replace(/\\leftarrow\b/g, '<-')
+                .replace(/\\le\b/g, '<=')
+                .replace(/\\ge\b/g, '>=')
+                .replace(/\\neq\b/g, '!=')
+                .replace(/\\cdot\b/g, '*')
+                .replace(/\\times\b/g, 'x')
+                .replace(/\\log\b/g, 'log')
+                .replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)')
+                .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+                .replace(/\\\\/g, '\n');
             return {
-                response: externalResponse,
+                response: cleaned,
                 provider: 'Google Gemini'
             };
         }

@@ -101,8 +101,8 @@ const MaterialSchema = new mongoose.Schema({
     downloads_count: { type: Number, default: 0 },
     is_moderated: { type: Boolean, default: true },
     tags: [{ type: String }],
-    created_at: { type: Date, default: Date.now }
-// Conversation Schema
+    }, { strict: false });
+// Conversation Schema// Conversation Schema
 const ConversationSchema = new mongoose.Schema({
     id: { type: Number, index: true },
     type: { type: String, default: 'direct' },
